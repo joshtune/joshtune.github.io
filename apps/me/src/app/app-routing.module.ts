@@ -1,18 +1,14 @@
 import { NgModule } from '@angular/core';
 import { Routes, RouterModule } from '@angular/router';
-import {AppComponent} from "./app.component";
-import {HomeComponent} from "./pages/home/home.component";
 
 const routes: Routes = [
   {
     path: '',
-    component: HomeComponent
-  }
-  // {
-  //   path: '',
-  //   redirectTo: 'home',
-  //   pathMatch: 'full',
-  // },
+    redirectTo: 'home',
+    pathMatch: 'full',
+  },
+  { path: 'blog', loadChildren: () => import('./blog/blog.module').then(m => m.BlogModule) },
+  { path: 'home', loadChildren: () => import('./home/home.module').then(m => m.HomeModule) }
   // {
   //   path: 'login',
   //   component: LoginPageComponent,
@@ -50,7 +46,7 @@ const routes: Routes = [
 ];
 
 @NgModule({
-  imports: [RouterModule.forRoot(routes, { useHash: true })],
+  imports: [RouterModule.forRoot(routes)],
   exports: [RouterModule],
 })
 export class AppRoutingModule {}

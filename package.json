@@ -26,7 +26,8 @@
     "workspace-schematic": "nx workspace-schematic",
     "dep-graph": "nx dep-graph",
     "help": "nx help",
-    "scully": "scully",
+    "scully": "scully --scanRoutes",
+    "scully:watch": "scully --watch",
     "scully:serve": "scully serve"
   },
   "private": true,
