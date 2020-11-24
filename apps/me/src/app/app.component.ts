@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 
 @Component({
-  selector: 'joshtune-root',
+  selector: 'bej-root',
   template: ` <router-outlet></router-outlet> `,
 })
 export class AppComponent {}

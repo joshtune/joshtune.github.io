@@ -14,7 +14,7 @@ export interface ScullyRoute {
 }
 
 @Component({
-  selector: 'joshtune-home',
+  selector: 'bej-home',
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss']
 })

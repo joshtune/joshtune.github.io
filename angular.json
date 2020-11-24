@@ -10,7 +10,7 @@
       },
       "root": "apps/me",
       "sourceRoot": "apps/me/src",
-      "prefix": "joshtune",
+      "prefix": "bej",
       "architect": {
         "build": {
           "builder": "@angular-devkit/build-angular:browser",
