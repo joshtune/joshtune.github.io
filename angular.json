@@ -22,7 +22,10 @@
             "tsConfig": "apps/me/tsconfig.app.json",
             "aot": true,
             "assets": ["apps/me/src/favicon.ico", "apps/me/src/assets"],
-            "styles": ["apps/me/src/styles.scss"],
+            "styles": [
+              "apps/me/src/vendor.scss",
+              "apps/me/src/styles.scss"
+            ],
             "scripts": []
           },
           "configurations": {
