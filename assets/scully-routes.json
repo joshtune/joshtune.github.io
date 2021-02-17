@@ -1,1 +1,1 @@
-[{"route":"/blog/another-angular-tutorial","title":"Another Angular tutorial","description":"blog description","published":true,"tags":["angular"],"sourceFile":"another-angular-tutorial.md"},{"route":"/home"},{"route":"/"}]
+[{"route":"/home"},{"route":"/blog"},{"route":"/blog/another-angular-tutorial","title":"Another Angular tutorial","description":"blog description","published":true,"featured":false,"slug-image":"","tags":["angular"],"sourceFile":"another-angular-tutorial.md"},{"route":"/"}]
