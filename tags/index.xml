@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Tags on Josh Tune</title>
+    <link>https://joshtune.github.io/tags/</link>
+    <description>Recent content in Tags on Josh Tune</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
+    <copyright>Copy, _right?_ :thinking_face:</copyright>
+    <lastBuildDate>Sat, 08 Aug 2020 00:00:00 +0000</lastBuildDate><atom:link href="https://joshtune.github.io/tags/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>advanced</title>
+      <link>https://joshtune.github.io/tags/advanced/</link>
+      <pubDate>Sat, 08 Aug 2020 00:00:00 +0000</pubDate>
+      
+      <guid>https://joshtune.github.io/tags/advanced/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>css</title>
+      <link>https://joshtune.github.io/tags/css/</link>
+      <pubDate>Sat, 08 Aug 2020 00:00:00 +0000</pubDate>
+      
+      <guid>https://joshtune.github.io/tags/css/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>docs</title>
+      <link>https://joshtune.github.io/tags/docs/</link>
+      <pubDate>Sat, 08 Aug 2020 00:00:00 +0000</pubDate>
+      
+      <guid>https://joshtune.github.io/tags/docs/</guid>
+      <description></description>
+    </item>
+    
+  </channel>
+</rss>
