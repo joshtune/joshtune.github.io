@@ -6,15 +6,15 @@
     <description>Recent content on Josh Tune</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en</language>
-    <copyright>Copy, _right?_ :thinking_face:</copyright>
-    <lastBuildDate>Sat, 08 Aug 2020 00:00:00 +0000</lastBuildDate><atom:link href="https://joshtune.github.io/index.xml" rel="self" type="application/rss+xml" />
+    <copyright>&amp;copy;2023 Josh Tune</copyright>
+    <lastBuildDate>Tue, 02 May 2023 00:00:00 +0000</lastBuildDate><atom:link href="https://joshtune.github.io/index.xml" rel="self" type="application/rss+xml" />
     <item>
-      <title>Advanced Customisation</title>
-      <link>https://joshtune.github.io/posts/advanced-customisation/</link>
-      <pubDate>Sat, 08 Aug 2020 00:00:00 +0000</pubDate>
+      <title>My Journey as a Software Engineer and Person of Faith</title>
+      <link>https://joshtune.github.io/posts/2023/05/02-my-journey-as-a-software-engineer-and-person-of-faith/</link>
+      <pubDate>Tue, 02 May 2023 00:00:00 +0000</pubDate>
       
-      <guid>https://joshtune.github.io/posts/advanced-customisation/</guid>
-      <description>Congo supports advanced customisations that include modifying the underlying Tailwind configuration, building the theme manually and providing custom CSS.</description>
+      <guid>https://joshtune.github.io/posts/2023/05/02-my-journey-as-a-software-engineer-and-person-of-faith/</guid>
+      <description>Hello and welcome to my very first blog post! I&amp;rsquo;m new to blogging, and I want to share what this blog will be about. My plans might change as I learn more, but I&amp;rsquo;m excited to start this journey with you.</description>
     </item>
     
   </channel>
