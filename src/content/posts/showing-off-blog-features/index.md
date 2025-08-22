@@ -1,7 +1,7 @@
 ---
 title: 'Showing Off Blog Features'
 published: 2025-07-20
-draft: false
+draft: true
 tags: ['astro', 'demo', 'markdown']
 toc: true
 coverImage:
@@ -213,16 +213,16 @@ Make those equations pretty! $ \frac{a}{b} \cdot b = a $
 ### Fieldset with Inputs
 
 <fieldset>
-    <input type="text" placeholder="Type something"><br>
-    <input type="number" placeholder="Insert number"><br>
-    <input type="text" value="Input value"><br>
+    <input type="text" placeholder="Type something"><br />
+    <input type="number" placeholder="Insert number"><br />
+    <input type="text" value="Input value"><br />
     <select>
         <option value="1">Option 1</option>
         <option value="2">Option 2</option>
         <option value="3">Option 3</option>
-    </select><br>
-    <textarea placeholder="Insert a comment..."></textarea><br>
-    <label><input type="checkbox"> I understand<br></label>
+    </select><br />
+    <textarea placeholder="Insert a comment..."></textarea><br />
+    <label><input type="checkbox"> I understand<br /></label>
     <button type="submi">Submit</button>
 </fieldset>
 
@@ -232,24 +232,25 @@ Make those equations pretty! $ \frac{a}{b} \cdot b = a $
 <label>
     <input type="radio" name="fruit" value="apple">
     Apple
-</label><br>
+</label><br />
 
 <label>
     <input type="radio" name="fruit" value="banana">
     Banana
-</label><br>
+</label><br />
 
 <label>
     <input type="radio" name="fruit" value="orange">
     Orange
-</label><br>
+</label><br />
 
 <label>
     <input type="radio" name="fruit" value="grape">
     Grape
-</label><br>
+</label><br />
 
 <label>
     <input type="checkbox" name="terms" value="agree">
     I agree to the terms and conditions
-</label><br>
+</label><br />
+</form>
