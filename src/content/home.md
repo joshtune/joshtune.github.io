@@ -5,4 +5,4 @@ avatarImage:
 githubCalendar: 'joshtune'
 ---
 
-Welcome to the example site. This site is meant to show off my custom Astro theme/template **MultiTerm** which creates a coder-ready blog complete with an interactive theme changer, RSS, sitemap, tagging, and markdown extensions.
+I’m driven by building something from nothing. With more than a decade of experience, I focus on small wins—collaborate, build, test, refactor, repeat.
