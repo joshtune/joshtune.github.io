@@ -4,10 +4,10 @@ published: 2025-08-26
 draft: false
 description: 'A simple guide to when to stack or not. Keep parts independent; stack only when order matters.'
 slug: stacked-vs-flat-mrs
-tags: ['work', 'git', 'mrs', 'mr']
+tags: ['workflow', 'git']
 ---
 
-I use two modes. First, I build pieces that stand alone. Then, I connect those pieces. When I’m building things that don’t depend on each other—like a data grid, the form fields, and the full form—I don’t stack MRs. Each one gets its own branch and its own review. This keeps the work small, easy to test, and easy to ship in any order. No waiting. No messy rebases.
+I use two modes. First, I build pieces that stand alone. Then, I connect those pieces. When I’m building things that don’t depend on each other—like a data grid, the form fields, and the full form—I don’t stack Merge Requests, MRs . Each one gets its own branch and its own review. This keeps the work small, easy to test, and easy to ship in any order. No waiting. No messy rebases.
 
 Once the parts exist, I switch to stacked MRs to wire them up in a clear order. I stack because each step depends on the last, and I want reviewers to follow a simple story. For our grid + form flow, my stack looks like this:
 
