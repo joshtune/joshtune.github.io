@@ -40,11 +40,11 @@ const config: SiteConfig = {
       name: 'Archive',
       url: '/posts',
     },
-    {
-      name: 'GitHub',
-      url: 'https://github.com/joshtune',
-      external: true,
-    },
+    // {
+    //   name: 'GitHub',
+    //   url: 'https://github.com/joshtune',
+    //   external: true,
+    // },
   ],
   // The theming configuration for the site.
   themes: {
@@ -177,9 +177,9 @@ const config: SiteConfig = {
   // Make sure to compress the image to a web-friendly size (<100kb)
   // Try using the excellent https://squoosh.app web app for creating small webp files
   characters: {
-    owl: '/owl.webp',
-    unicorn: '/unicorn.webp',
-    duck: '/duck.webp',
+    // owl: '/owl.webp',
+    // unicorn: '/unicorn.webp',
+    // duck: '/duck.webp',
   },
 }
 
