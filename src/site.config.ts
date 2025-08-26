@@ -41,6 +41,10 @@ const config: SiteConfig = {
       url: '/posts',
     },
     // {
+    //   name: 'Resume',
+    //   url: '/resume',
+    // },
+    // {
     //   name: 'GitHub',
     //   url: 'https://github.com/joshtune',
     //   external: true,
