@@ -3,6 +3,7 @@ title: 'Stacked vs. Flat MRs: My Simple Rule'
 published: 2025-08-26
 draft: false
 description: 'A simple guide to when to stack or not. Keep parts independent; stack only when order matters.'
+slug: stacked-vs-flat-mrs
 tags: ['work', 'git', 'mrs', 'mr']
 ---
 
