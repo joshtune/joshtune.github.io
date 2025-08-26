@@ -18,4 +18,4 @@ This split keeps the build phase fast (flat MRs for grid, fields, and form) and 
 
 > My quick rule: if work can land in any order, keep it flat. If it must land in a specific order, stack it. Small steps, plain titles, demo each step.
 
-Let me know if you have a better way to do this in the comments.
+Let me know your thoughts in the comments.
