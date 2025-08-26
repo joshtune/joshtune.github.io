@@ -1,6 +1,7 @@
 ---
 title: 'Stacked vs. Flat MRs: My Simple Rule'
-published: 2025-08-26
+published: 2025-08-25
+updated: 2025-08-26
 draft: false
 description: 'Keep parts independent; stack only when order matters.'
 slug: stacked-vs-flat-mrs
@@ -17,6 +18,6 @@ Once the parts exist, I switch to stacked MRs to wire them up in a clear order. 
 
 This split keeps the build phase fast (flat MRs for grid, fields, and form) and the connect phase clear (stacked MRs for page → drawer → form wiring).
 
-> My quick rule: if work can land in any order, keep it flat. If it must land in a specific order, stack it. Small steps, plain titles, demo each step.
+> If work can land in any order, keep it flat. If it must land in a specific order, stack it. Small steps, plain titles, demo each step.
 
-Let me know your thoughts in the comments.
+What do you think? Let me know your thoughts in the comments.
