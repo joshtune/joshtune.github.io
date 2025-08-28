@@ -200,3 +200,5 @@ In all cases, the **key idea** is the same:
 3. When a parent changes, rebase children and update their MRs.
 
 Stacking MRs can feel like overhead at first, but with the right tooling, it keeps reviews smaller, clearer, and easier to merge.
+
+Do you have a favorite workflow? Let me know in the comments!
