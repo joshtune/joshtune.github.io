@@ -5,7 +5,7 @@ updated: 2025-08-26
 draft: false
 description: 'Keep parts independent; stack only when order matters.'
 slug: stacked-vs-flat-mrs
-tags: ['workflow', 'git']
+tags: ['workflow', 'git', 'opinion']
 ---
 
 I use two modes. First, I build pieces that stand alone. Then, I connect those pieces. When I’m building things that don’t depend on each other—like a data grid, the form fields, and the full form—I don’t stack Merge Requests, MRs . Each one gets its own branch and its own review. This keeps the work small, easy to test, and easy to ship in any order. No waiting. No messy rebases.
