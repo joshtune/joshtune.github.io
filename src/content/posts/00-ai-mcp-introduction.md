@@ -1,7 +1,7 @@
 ---
 title: 'MCP for Frontend Engineers — Series Intro'
 published: 2025-08-29
-draft: true
+draft: false
 description: 'Join me on my journey to better understand Artificial Intelligence (AI) and how it can help you build better software. This series teaches web developers how to build Model Context Protocol (MCP) servers in TypeScript and plug them into a real web frontend—so your app can call your own tools, safely, with streaming responses.'
 series: 'AI MCP'
 seriesIndex: 0
