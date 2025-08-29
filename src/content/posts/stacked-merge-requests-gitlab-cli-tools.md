@@ -201,4 +201,4 @@ In all cases, the **key idea** is the same:
 
 Stacking MRs can feel like overhead at first, but with the right tooling, it keeps reviews smaller, clearer, and easier to merge.
 
-What is your favorite git workflow? What are your opinions when it comes to stacking MRs?  Let me know in the comments!
+What is your favorite git workflow? What are your opinions when it comes to stacking MRs? Let me know in the comments!
