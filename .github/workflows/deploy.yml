@@ -18,33 +18,27 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      # 1) Node first (no pnpm cache yet)
+      - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
+
+      # 2) Install pnpm so it's on PATH
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+
+      # 3) Now it's safe to enable caching that calls pnpm under the hood
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
           cache: 'pnpm'
           cache-dependency-path: pnpm-lock.yaml
 
-      - run: corepack enable
-      - run: corepack prepare pnpm@9.12.0 --activate
-      - run: pnpm -v   # must succeed here
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.12.0
-          run_install: true
-
-      - name: Build
-        run: pnpm run build
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build
 
   deploy:
     runs-on: ubuntu-latest
