@@ -23,15 +23,19 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '24'  # or '20'
+          node-version: '24' # or '20'
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 9.12.0
 
-      - name: Install deps
+      - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      # inside the build job, before "Build"
+      - name: Set build env
+        run: echo "DISABLE_REMOTE_FETCH=1" >> $GITHUB_ENV
 
       - name: Build
         run: pnpm run build
