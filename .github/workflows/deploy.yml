@@ -24,34 +24,23 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: '24'
           cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml
 
-      # Ensure Corepack is enabled for pnpm management
-      - name: Enable Corepack
-        run: corepack enable
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+          run_install: true
 
-      # Use Corepack to prepare and activate the specific version of pnpm
-      - name: Use pinned pnpm
-        run: corepack prepare pnpm@9.12.0 --activate
-
-      # Check that pnpm is available
-      - name: Verify pnpm
-        run: pnpm --version
-
-      # Install dependencies using pnpm
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      # Build the project
       - name: Build
         run: pnpm run build
 
-      # Upload the built project for deployment
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./dist
+          path: dist
 
   deploy:
     runs-on: ubuntu-latest
