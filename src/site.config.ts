@@ -6,10 +6,9 @@ const config: SiteConfig = {
   // The name of your site, used in the title and for SEO.
   title: 'Josh Tune',
   // The description of your site, used for SEO and RSS feed.
-  description:
-    '',
+  description: '',
   // The author of the site, used in the footer, SEO, and RSS feed.
-  author: 'Katy Kookaburra',
+  author: 'Josh Tune',
   // Keywords for SEO, used in the meta tags.
   tags: ['Josh Tune', 'Portfolio'],
   // Path to the image used for generating social media previews.
