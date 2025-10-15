@@ -5,6 +5,9 @@ draft: false
 slug: three-weeks-with-ai-cli
 description: 'Three weeks with AI CLI taught me one thing: speed’s easy, clarity’s everything.'
 tags: ['ai', 'workflow']
+coverImage:
+  src: './cover.png'
+  alt: ''
 ---
 
 It’s been about three weeks since I started building with AI CLI tools, mainly using Claude CLI and APEX, and honestly — it’s been a ride. It’s fun, it’s fast, and it fixes stuff on the fly. But I’ve learned a few lessons that make working with AI way better.
