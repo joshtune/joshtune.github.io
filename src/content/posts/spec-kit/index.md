@@ -1,6 +1,6 @@
 ---
 title: 'Spec Kit: Spec-driven development for AI-assisted coding'
-published: 2026-01-09
+published: 2026-01-10
 draft: true
 description: 'A mock blog entry on GitHub’s Spec Kit and how it changes the way I work with coding agents.'
 tags: ['ai', 'workflow', 'specs', 'productivity']
