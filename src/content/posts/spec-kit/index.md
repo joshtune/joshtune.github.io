@@ -19,7 +19,7 @@ Docs: https://github.github.io/spec-kit/
 
 ## The moment it clicked for me
 
-A coworker of mine used Spec Kit on **[PROJECT NAME]** and the “shape” of the work looked different right away:
+A coworker of mine used Spec Kit on a POC project and the “shape” of the work looked different right away:
 
 - Less back-and-forth about what we meant
 - Fewer surprise abstractions
@@ -132,10 +132,3 @@ specify init . --ai codex
 My coworker’s use of Spec Kit made something really clear: the bottleneck isn’t writing code anymore — it’s *capturing intent*.
 
 Spec Kit is a good forcing function for that. And if you’re already building with agents, it’s one of the most practical ways I’ve seen to get “speed” without losing “clarity”.
-
----
-
-Notes to self before publishing:
-
-- Replace placeholders: `[PROJECT NAME]`, add a short real story, add 1–2 screenshots or links to the coworker’s PRs.
-- Decide whether to keep this as a “workflow” post or turn it into a step-by-step tutorial.
