@@ -4,4 +4,4 @@ avatarImage:
   alt: 'My avatar'
 ---
 
-I’m driven by building something from nothing. With more than a decade of experience, I focus on small wins—collaborate, build, test, refactor, repeat.
+I’m driven by building something from nothing. With more than 15 years of experience, I focus on small wins—collaborate, build, test, refactor, repeat.
