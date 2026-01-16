@@ -205,5 +205,3 @@ If your company is serious about agents, “MCP in front of APIs” is basically
 - platform teams should provide a **safe, reusable interface** to internal systems
 
 As a developer, that’s both an opportunity (better leverage, fewer brittle integrations) and a responsibility (tool design, safety, and change management become part of the job).
-
-If you tell me what stack you’re using (Node, Python, Go) and what kinds of APIs you’re talking about (internal CRUD, data warehouses, ticketing, payments), I can also sketch a concrete “first MCP server” design that fits your org.
