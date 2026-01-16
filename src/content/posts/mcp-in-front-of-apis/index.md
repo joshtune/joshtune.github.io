@@ -4,6 +4,9 @@ published: 2026-01-16
 draft: false
 description: 'Why teams are putting Model Context Protocol (MCP) servers “in front of” internal APIs—and how it changes developer workflows, architecture, and governance.'
 tags: ['mcp', 'apis', 'ai', 'architecture', 'security', 'developer-experience']
+coverImage:
+  src: './cover.png'
+  alt: ''
 ---
 
 There’s a phrase you’ll hear a lot right now in companies adopting AI assistants: **“We should put MCP in front of our APIs.”**
