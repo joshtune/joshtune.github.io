@@ -6,13 +6,13 @@ description: 'A mock blog entry on GitHub’s Spec Kit and how it changes the wa
 tags: ['ai', 'workflow', 'specs', 'productivity']
 ---
 
-I’ve been watching the “AI coding agent” space explode: faster scaffolds, faster refactors, faster everything. The downside is also obvious: when you move fast, you can end up with a pile of code that *kind of* works but doesn’t match what you actually meant.
+I’ve been watching the “AI coding agent” space explode: faster scaffolds, faster refactors, faster everything. The downside is also obvious: when you move fast, you can end up with a pile of code that _kind of_ works but doesn’t match what you actually meant.
 
 That’s why GitHub’s **Spec Kit** caught my eye.
 
 Quick note: I haven’t personally tried Spec Kit yet — these are my notes based on what I’m hearing (and what I watched a coworker do with it).
 
-Spec Kit is an open source toolkit that pushes you toward *spec-driven development*: write down what you want, why you want it, and the constraints you care about — and then let an agent implement from that spec instead of guessing from a vague prompt.
+Spec Kit is an open source toolkit that pushes you toward _spec-driven development_: write down what you want, why you want it, and the constraints you care about — and then let an agent implement from that spec instead of guessing from a vague prompt.
 
 Repo: https://github.com/github/spec-kit  
 Docs: https://github.github.io/spec-kit/
@@ -129,6 +129,6 @@ specify init . --ai codex
 
 ## Closing thought
 
-My coworker’s use of Spec Kit made something really clear: the bottleneck isn’t writing code anymore — it’s *capturing intent*.
+My coworker’s use of Spec Kit made something really clear: the bottleneck isn’t writing code anymore — it’s _capturing intent_.
 
 Spec Kit is a good forcing function for that. And if you’re already building with agents, it’s one of the most practical ways I’ve seen to get “speed” without losing “clarity”.

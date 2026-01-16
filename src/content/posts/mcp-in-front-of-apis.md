@@ -123,7 +123,7 @@ Historically, we built APIs for:
 Now there’s a new consumer: **LLM-driven tool use**. That shifts emphasis toward:
 
 - discoverability (what can this system do?)
-- constrained interaction (what *should* it be allowed to do?)
+- constrained interaction (what _should_ it be allowed to do?)
 - provenance (who asked, what was the justification, what changed?)
 
 ### “Natural language” becomes a coordination layer, not a transport
