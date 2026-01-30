@@ -12,14 +12,14 @@ Here's how they stack up.
 
 ## The quick version
 
-| | shadcn-svelte | Skeleton | DaisyUI |
-|---|---|---|---|
-| **Approach** | Copy components into your project | Install as dependency | Tailwind plugin |
-| **Svelte-first** | Yes | Yes (also React, Vue, etc.) | Framework-agnostic |
-| **JavaScript** | Yes, Svelte components | Yes, uses Zag.js | No, pure CSS |
-| **Ownership** | You own the code | Library owns the code | Plugin owns the styles |
-| **Customization** | Edit source directly | Theme system + Tailwind | Tailwind utilities + themes |
-| **Learning curve** | Moderate | Moderate | Low |
+|                    | shadcn-svelte                     | Skeleton                    | DaisyUI                     |
+| ------------------ | --------------------------------- | --------------------------- | --------------------------- |
+| **Approach**       | Copy components into your project | Install as dependency       | Tailwind plugin             |
+| **Svelte-first**   | Yes                               | Yes (also React, Vue, etc.) | Framework-agnostic          |
+| **JavaScript**     | Yes, Svelte components            | Yes, uses Zag.js            | No, pure CSS                |
+| **Ownership**      | You own the code                  | Library owns the code       | Plugin owns the styles      |
+| **Customization**  | Edit source directly              | Theme system + Tailwind     | Tailwind utilities + themes |
+| **Learning curve** | Moderate                          | Moderate                    | Low                         |
 
 ## shadcn-svelte: Own your components
 
@@ -30,12 +30,14 @@ This sounds weird at first. Why would I want to maintain component code myself?
 The answer is control. When you need to change how a button behaves or add a prop that the library doesn't support, you just edit the file. No waiting for PRs to merge, no forking the repo, no "hacky workarounds." It's your code.
 
 **What I like:**
+
 - Beautiful defaults based on Radix primitives
 - Full control over every line of code
 - Great accessibility out of the box
 - Active community, good docs
 
 **What I don't:**
+
 - You're responsible for updates (though that's kind of the point)
 - Initial setup takes longer than `npm install`
 - If you want the same component in multiple projects, you're copying files around
@@ -49,6 +51,7 @@ The answer is control. When you need to change how a button behaves or add a pro
 What sets Skeleton apart is how complete it feels. You get a design system, not just components. Typography scales, spacing tokens, color systems, dark mode—it's all thought through and connected. The components use Zag.js under the hood, which handles the gnarly bits like accessibility and internationalization across frameworks.
 
 **What I like:**
+
 - Feels cohesive—everything works together
 - Great theme system with CSS custom properties
 - Interactive components handle state properly
@@ -56,6 +59,7 @@ What sets Skeleton apart is how complete it feels. You get a design system, not 
 - Active development and solid community (5k+ GitHub stars, 2k+ Discord)
 
 **What I don't:**
+
 - More opinionated than the others
 - Larger footprint if you only need a few components
 - Cross-framework support means some Svelte-specific patterns feel abstracted away
@@ -71,6 +75,7 @@ Instead of writing `class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blu
 The theme system is impressive—35 built-in themes using CSS variables. Switch from light to dark to cyberpunk with a single attribute change.
 
 **What I like:**
+
 - Zero JavaScript dependency
 - Works with any framework (or no framework)
 - 65 components covering most needs
@@ -78,6 +83,7 @@ The theme system is impressive—35 built-in themes using CSS variables. Switch 
 - Smallest learning curve of the three
 
 **What I don't:**
+
 - No interactive behavior—you write your own JS for modals, dropdowns, etc.
 - Less "Svelte-native" feeling
 - Semantic classes can conflict with existing Tailwind mental models

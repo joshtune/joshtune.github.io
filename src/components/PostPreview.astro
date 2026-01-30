@@ -41,7 +41,8 @@ if (post.data.tags && post.data.tags.length > 0) {
 }
 const samePage = Astro.url.pathname === `/posts/${post.id}`
 const articleLink = samePage ? `#${post.id}` : `/posts/${post.id}`
-const fallbackCoverImageFile = fallbackCoverImages[post.id] || fallbackCoverImages[post.slug]
+const fallbackCoverImageFile =
+  fallbackCoverImages[post.id] || fallbackCoverImages[post.slug]
 const coverImage =
   post.data.coverImage ||
   (fallbackCoverImageFile
@@ -50,7 +51,9 @@ const coverImage =
 ---
 
 <article class="w-full py-5 my-1 md:my-4 border-accent/10">
-  <div class={`flex flex-col gap-5 ${coverImage ? 'md:flex-row md:items-start md:gap-6' : ''}`}>
+  <div
+    class={`flex flex-col gap-5 ${coverImage ? 'md:flex-row md:items-start md:gap-6' : ''}`}
+  >
     {
       coverImage && (
         <a href={articleLink} class="block md:max-w-[200px] w-full shrink-0">
@@ -70,7 +73,11 @@ const coverImage =
         <a href={articleLink}>{post.data.title}</a>
       </h1>
       <PostInfo post={post} class="mb-3 mt-4" />
-      {description && <p class="pl-0.5 my-4 text-base/7 text-foreground">{description}</p>}
+      {
+        description && (
+          <p class="pl-0.5 my-4 text-base/7 text-foreground">{description}</p>
+        )
+      }
       {
         tags && (
           <div class="mb-6">
