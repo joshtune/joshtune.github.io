@@ -1,0 +1,96 @@
+---
+import type { CollectionEntry } from 'astro:content'
+import { CalendarChart } from './charts'
+
+interface Props {
+  posts: CollectionEntry<'posts'>[]
+}
+
+const { posts } = Astro.props
+
+// Calculate date range: 1 year back from today, with complete weeks
+const today = new Date()
+const oneYearAgo = new Date(today)
+oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
+
+// Round start date to beginning of week (Sunday)
+const startOfWeek = new Date(oneYearAgo)
+startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay())
+
+// Round end date to end of week (Saturday)
+const endOfWeek = new Date(today)
+const daysUntilSaturday = 6 - endOfWeek.getDay()
+endOfWeek.setDate(endOfWeek.getDate() + daysUntilSaturday)
+
+const formatDate = (date: Date) => date.toISOString().split('T')[0]
+
+const from = formatDate(startOfWeek)
+const to = formatDate(endOfWeek)
+
+// Aggregate posts by publish date
+const postCountByDate = posts.reduce(
+  (acc, post) => {
+    const date = formatDate(new Date(post.data.published))
+    acc[date] = (acc[date] || 0) + 1
+    return acc
+  },
+  {} as Record<string, number>,
+)
+
+// Convert to Nivo calendar format
+const calendarData = Object.entries(postCountByDate).map(([day, value]) => ({
+  day,
+  value,
+}))
+---
+
+<section class="post-activity">
+  <h2>Post Activity</h2>
+  <div class="calendar-container" id="calendar-scroll">
+    <div class="calendar-inner">
+      <CalendarChart
+        client:visible
+        data={calendarData}
+        from={from}
+        to={to}
+        height={300}
+      />
+    </div>
+  </div>
+</section>
+
+<style>
+  .post-activity {
+    margin-bottom: 2rem;
+    width: 100%;
+  }
+
+  .post-activity h2 {
+    font-size: 1.25rem;
+    margin-bottom: 0.5rem;
+    color: var(--foreground);
+    border-bottom: 1px solid var(--separator);
+    padding-bottom: 0.5rem;
+  }
+
+  .calendar-container {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .calendar-inner {
+    width: 2000px;
+    flex-shrink: 0;
+    padding-bottom: 5px;
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const container = document.getElementById('calendar-scroll')
+    if (container) {
+      container.scrollLeft = container.scrollWidth
+    }
+  })
+</script>

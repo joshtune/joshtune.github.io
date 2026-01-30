@@ -9,6 +9,7 @@ import HomeBanner from '~/components/HomeBanner.astro'
 import siteConfig from '~/site.config'
 import TagsSection from '~/components/TagsSection.astro'
 import SeriesSection from '~/components/SeriesSection.astro'
+import PostActivityCalendar from '~/components/PostActivityCalendar.astro'
 
 const home = await getCollection('home')
 let HomeContent
@@ -45,6 +46,7 @@ const postsHaveSeries = sortedPosts.some((post) => post.data.series)
       </section>
     )
   }
+  {sortedPosts.length > 0 && <PostActivityCalendar posts={sortedPosts} />}
   {
     postsHaveTags && (
       <section>

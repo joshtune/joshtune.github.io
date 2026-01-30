@@ -1,4 +1,4 @@
-import { ResponsiveCalendar } from '@nivo/calendar'
+import { ResponsiveTimeRange } from '@nivo/calendar'
 import { darkTheme } from './theme'
 
 interface CalendarDatum {
@@ -13,51 +13,34 @@ interface CalendarChartProps {
   height?: number
   emptyColor?: string
   colors?: string[]
-  minValue?: number | 'auto'
-  maxValue?: number | 'auto'
-  direction?: 'horizontal' | 'vertical'
 }
 
 export default function CalendarChart({
   data,
   from,
   to,
-  height = 200,
+  height = 180,
   emptyColor = '#161b22',
-  colors = ['#0e4429', '#006d32', '#26a641', '#39d353'],
-  minValue = 'auto',
-  maxValue = 'auto',
-  direction = 'horizontal',
+  colors = ['#1a3a4a', '#1e5a7a', '#3a8cc2', '#58a6ff'],
 }: CalendarChartProps) {
   return (
     <div style={{ height }}>
-      <ResponsiveCalendar
+      <ResponsiveTimeRange
         data={data}
         from={from}
         to={to}
         theme={darkTheme}
         emptyColor={emptyColor}
         colors={colors}
-        minValue={minValue}
-        maxValue={maxValue}
-        margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
-        yearSpacing={40}
-        monthBorderColor="#0a0c10"
+        margin={{ top: 20, right: 0, bottom: 0, left: 0 }}
         dayBorderWidth={2}
         dayBorderColor="#0a0c10"
-        direction={direction}
-        legends={[
-          {
-            anchor: 'bottom-right',
-            direction: 'row',
-            translateY: 36,
-            itemCount: 4,
-            itemWidth: 42,
-            itemHeight: 36,
-            itemsSpacing: 14,
-            itemDirection: 'right-to-left',
-          },
-        ]}
+        dayRadius={5}
+        daySpacing={1}
+        weekdayTicks={[]}
+        weekdayLegendOffset={0}
+        firstWeekday="sunday"
+        square={true}
       />
     </div>
   )
