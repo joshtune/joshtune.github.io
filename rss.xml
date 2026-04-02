@@ -1,0 +1,1315 @@
+<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet href="/rss.xsl" type="text/xsl"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>Josh Tune</title><description/><link>https://joshtune.com</link><item><title>Stacked vs. Flat MRs: My Simple Rule</title><link>https://joshtune.com/posts/stacked-vs-flat-mrs</link><guid isPermaLink="true">https://joshtune.com/posts/stacked-vs-flat-mrs</guid><description>Keep parts independent; stack only when order matters.</description><pubDate>Mon, 25 Aug 2025 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;I use two modes. First, I build pieces that stand alone. Then, I connect those pieces. When I’m building things that don’t depend on each other—like a data grid, the form fields, and the full form—I don’t stack Merge Requests, MRs . Each one gets its own branch and its own review. This keeps the work small, easy to test, and easy to ship in any order. No waiting. No messy rebases.&lt;/p&gt;
+&lt;p&gt;Once the parts exist, I switch to stacked MRs to wire them up in a clear order. I stack because each step depends on the last, and I want reviewers to follow a simple story. For our grid + form flow, my stack looks like this:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;MR 1: Add the grid to the page. Show rows, paging/sort, empty state. No form yet.&lt;/li&gt;
+&lt;li&gt;MR 2: Add the drawer. Clicking “Create” or a row opens the drawer. The drawer is empty but proves the flow.&lt;/li&gt;
+&lt;li&gt;MR 3: Put the form in the drawer + actions. Load data, validate, save, show toasts, refresh the grid.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;This split keeps the build phase fast (flat MRs for grid, fields, and form) and the connect phase clear (stacked MRs for page → drawer → form wiring).&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;If work can land in any order, keep it flat. If it must land in a specific order, stack it. Small steps, plain titles, demo each step.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;What do you think? Let me know your thoughts in the comments.&lt;/p&gt;
+</content:encoded><author>Josh Tune</author></item><item><title>Stacked Merge Requests on GitLab with CLI Tools</title><link>https://joshtune.com/posts/stacked-merge-requests-gitlab-cli-tools</link><guid isPermaLink="true">https://joshtune.com/posts/stacked-merge-requests-gitlab-cli-tools</guid><description>A hands-on guide to creating and maintaining stacked GitLab merge requests using CLI tools like git-spice, git-town, and glab/push options</description><pubDate>Thu, 28 Aug 2025 00:00:00 GMT</pubDate><content:encoded>&lt;h2&gt;Summary (Highlights)&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;git-spice&lt;/strong&gt; → The most automated option; one command (&lt;code&gt;gs stack submit --fill&lt;/code&gt;) creates the whole MR stack and keeps downstream branches updated automatically when a parent changes.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;git-town&lt;/strong&gt; → Great if you already use Git-Town; build stacks with &lt;code&gt;append&lt;/code&gt;, then keep everything in sync with &lt;code&gt;git town sync --stack&lt;/code&gt; and open/update MRs with &lt;code&gt;git town propose --stack&lt;/code&gt;.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;glab / Git push options&lt;/strong&gt; → The native but manual route; you create each MR targeting its parent branch and rebase + force-push children when a parent changes.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Key takeaway&lt;/strong&gt; → If you want &lt;em&gt;automation&lt;/em&gt;, use &lt;strong&gt;git-spice&lt;/strong&gt;; if you want &lt;em&gt;structure with flexibility&lt;/em&gt;, use &lt;strong&gt;git-town&lt;/strong&gt;; if you want &lt;em&gt;bare-metal control without extra tools&lt;/em&gt;, stick with &lt;strong&gt;glab/push options&lt;/strong&gt;.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;Warning&lt;/h2&gt;
+&lt;p&gt;I have not tested these tools in production. Use at your own risk.&lt;/p&gt;
+&lt;h2&gt;Lets Get Started&lt;/h2&gt;
+&lt;p&gt;Stacking merge requests (MRs) is a powerful way to manage dependent changes. Instead of waiting for one MR to merge before opening the next, you can build a &lt;strong&gt;chain of branches&lt;/strong&gt;, each with its own MR. This improves review flow and keeps changes focused.&lt;/p&gt;
+&lt;p&gt;In this post, we’ll look at how to create a stack of &lt;strong&gt;four MRs off &lt;code&gt;main&lt;/code&gt;&lt;/strong&gt; with different CLI workflows, and how to &lt;strong&gt;update the entire tree if one MR changes&lt;/strong&gt;.&lt;/p&gt;
+&lt;hr /&gt;
+&lt;h2&gt;The Example Stack&lt;/h2&gt;
+&lt;p&gt;We’ll create this structure:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;
+main → mr-1 → mr-2 → mr-3 → mr-4
+
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Each tool section shows:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;How to create the four stacked branches and open MRs.&lt;/li&gt;
+&lt;li&gt;How to propagate changes when one MR is updated.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;hr /&gt;
+&lt;h2&gt;A) git-spice (purpose-built for stacked MRs)&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&quot;https://abhinav.github.io/git-spice/&quot;&gt;git-spice&lt;/a&gt; is designed for stacking and works with &lt;strong&gt;GitHub and GitLab&lt;/strong&gt;. It can create, update, and restack MRs automatically.&lt;/p&gt;
+&lt;h3&gt;1. Create branches &amp;amp; submit stacked MRs&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;# start from main
+git checkout main
+git pull
+
+git checkout -b mr-1
+# …changes &amp;amp; commit…
+
+git checkout -b mr-2
+# …changes &amp;amp; commit…
+
+git checkout -b mr-3
+# …changes &amp;amp; commit…
+
+git checkout -b mr-4
+# …changes &amp;amp; commit…
+
+# submit the entire stack as MRs
+gs stack submit --fill
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;code&gt;--fill&lt;/code&gt; auto-populates MR titles/bodies from commits. Use &lt;code&gt;--draft&lt;/code&gt; if you want them as drafts.&lt;/p&gt;
+&lt;h3&gt;2. Propagate an update&lt;/h3&gt;
+&lt;p&gt;Suppose &lt;code&gt;mr-2&lt;/code&gt; gets new commits or an amend:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;git checkout mr-2
+# …make changes &amp;amp; commit…
+gs branch submit --fill
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;git-spice automatically &lt;strong&gt;rebases downstream branches (&lt;code&gt;mr-3&lt;/code&gt;, &lt;code&gt;mr-4&lt;/code&gt;)&lt;/strong&gt; and updates their MRs.&lt;/p&gt;
+&lt;hr /&gt;
+&lt;h2&gt;B) git-town (branch workflow enhancer)&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&quot;https://www.git-town.com/&quot;&gt;git-town&lt;/a&gt; extends Git with high-level commands. It manages parent/child branch relationships and supports GitLab MRs.&lt;/p&gt;
+&lt;h3&gt;1. Create branches &amp;amp; open stacked MRs&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;git checkout main
+git pull
+
+git town hack mr-1
+# …changes &amp;amp; commit…
+
+git town append mr-2   # child of mr-1
+# …changes &amp;amp; commit…
+
+git town append mr-3   # child of mr-2
+# …changes &amp;amp; commit…
+
+git town append mr-4   # child of mr-3
+# …changes &amp;amp; commit…
+
+# push and open MR pages for all branches
+git town propose --stack
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;2. Propagate an update&lt;/h3&gt;
+&lt;p&gt;If &lt;code&gt;mr-2&lt;/code&gt; changes:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;git checkout mr-2
+# …amend/commit…
+
+git town sync --stack
+git town propose --stack
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;code&gt;sync --stack&lt;/code&gt; rebases all children (&lt;code&gt;mr-3&lt;/code&gt;, &lt;code&gt;mr-4&lt;/code&gt;) onto the updated branch and re-pushes them.&lt;/p&gt;
+&lt;hr /&gt;
+&lt;h2&gt;C) GitLab-native (glab / push options)&lt;/h2&gt;
+&lt;p&gt;If you don’t want external tools, you can use &lt;a href=&quot;https://gitlab.com/gitlab-org/cli&quot;&gt;glab&lt;/a&gt; or Git push options. This is more manual, but it’s native.&lt;/p&gt;
+&lt;h3&gt;1. Create branches &amp;amp; stacked MRs with &lt;code&gt;glab&lt;/code&gt;&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;git checkout main
+git pull
+
+git checkout -b mr-1
+# …changes &amp;amp; commit…
+glab mr create --source-branch mr-1 --target-branch main --fill
+
+git checkout -b mr-2
+# …changes &amp;amp; commit…
+glab mr create --source-branch mr-2 --target-branch mr-1 --fill
+
+git checkout -b mr-3
+# …changes &amp;amp; commit…
+glab mr create --source-branch mr-3 --target-branch mr-2 --fill
+
+git checkout -b mr-4
+# …changes &amp;amp; commit…
+glab mr create --source-branch mr-4 --target-branch mr-3 --fill
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Each MR’s target branch is its parent, creating the stack.&lt;/p&gt;
+&lt;h3&gt;Alternative: Git push options&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;git push -o merge_request.create \
+         -o merge_request.target=mr-1 \
+         -u origin mr-2
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Repeat for each branch, pointing &lt;code&gt;merge_request.target&lt;/code&gt; at the parent.&lt;/p&gt;
+&lt;h3&gt;2. Propagate an update&lt;/h3&gt;
+&lt;p&gt;If &lt;code&gt;mr-2&lt;/code&gt; changes:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;git checkout mr-3
+git rebase mr-2
+git push -f
+glab mr update --fill
+
+git checkout mr-4
+git rebase mr-3
+git push -f
+glab mr update --fill
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Here, you manually rebase each child branch and update its MR.&lt;/p&gt;
+&lt;hr /&gt;
+&lt;h2&gt;Summary&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;git-spice&lt;/strong&gt; → Automates MR creation and restacking; best if you want minimal manual work.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;git-town&lt;/strong&gt; → Semi-automated; great if you already use Git-Town for branch management.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;glab / push options&lt;/strong&gt; → Fully manual but official; good if you prefer no extra dependencies.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;In all cases, the &lt;strong&gt;key idea&lt;/strong&gt; is the same:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Branch each feature off the previous one.&lt;/li&gt;
+&lt;li&gt;Target each MR at its parent branch.&lt;/li&gt;
+&lt;li&gt;When a parent changes, rebase children and update their MRs.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;Stacking MRs can feel like overhead at first, but with the right tooling, it keeps reviews smaller, clearer, and easier to merge.&lt;/p&gt;
+&lt;p&gt;What is your favorite git workflow? What are your opinions when it comes to stacking MRs? Let me know in the comments!&lt;/p&gt;
+</content:encoded><author>Josh Tune</author></item><item><title>Three Weeks with AI CLI: What I’ve Learned</title><link>https://joshtune.com/posts/three-weeks-with-ai-cli</link><guid isPermaLink="true">https://joshtune.com/posts/three-weeks-with-ai-cli</guid><description>Three weeks with AI CLI taught me one thing: speed’s easy, clarity’s everything.</description><pubDate>Tue, 14 Oct 2025 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;It’s been about three weeks since I started building with AI CLI tools, mainly using Claude CLI and APEX, and honestly — it’s been a ride. It’s fun, it’s fast, and it fixes stuff on the fly. But I’ve learned a few lessons that make working with AI way better.&lt;/p&gt;
+&lt;p&gt;First off, it’s like having a lightning-fast pair programmer that’s too eager. If I toss it a vague problem, it’ll start coding before I finish explaining — and sometimes that means building things I never asked for. So I’ve learned to slow it down. I make it explain its approach first, walk me through the plan, and then we code. That step alone has saved me from a ton of rewrites.&lt;/p&gt;
+&lt;p&gt;Unit tests have become my safety net — not something I ask the AI to write first, but something I rely on to keep both of us honest. They help confirm that what we just built does what I actually intended. It’s a nice loop: I guide the AI, it writes the code, and the tests confirm we stayed aligned.&lt;/p&gt;
+&lt;p&gt;Another big takeaway: track everything.
+AI can drift fast if you don’t give it guardrails. I keep a running document of what’s being built — the plan, structure, preferences, naming patterns, things I like and don’t like. Since I switch between Claude CLI and APEX, having that context written down keeps things consistent no matter which AI I’m using that day.&lt;/p&gt;
+&lt;p&gt;I’ve also realized AI can easily overcomplicate the simple stuff. It’ll throw in abstractions or patterns that don’t fit my workflow. So now I call it out early — “No, we’re keeping this simple,” or “That’s too heavy for what I need.” It listens, adapts, and remembers. Over time, it’s starting to feel like training an assistant to think the way I do.&lt;/p&gt;
+&lt;p&gt;All in all, AI CLI has been a game-changer, but you’ve got to stay in the driver’s seat. It’s not about letting it take over — it’s about having a conversation, setting expectations, and building together. That’s what makes it powerful. And honestly? It’s been pretty great.&lt;/p&gt;
+</content:encoded><author>Josh Tune</author></item><item><title>From Three Weeks with AI CLI → Starting Fresh: My Next Phase</title><link>https://joshtune.com/posts/from-three-weeks-with-ai-cli-to-starting-fresh-my-next-phase</link><guid isPermaLink="true">https://joshtune.com/posts/from-three-weeks-with-ai-cli-to-starting-fresh-my-next-phase</guid><pubDate>Mon, 20 Oct 2025 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;It’s been a useful ride. In my previous post, I shared how I’d spent about three weeks using AI CLI tools (mainly Claude CLI and APEX) and learned some key lessons: slow the AI down so it outlines its approach before coding, write unit tests to keep us honest, track everything (plans, preferences, patterns) to keep consistency, and push back when the AI over-abstracts. ([joshtune.com][1])
+Now I’m gearing up for the next step — &lt;strong&gt;a fresh start&lt;/strong&gt;, built &lt;em&gt;slice by slice&lt;/em&gt; instead of “let’s just go”. Here’s how the next phase is shaping up:&lt;/p&gt;
+&lt;h2&gt;1. Slice by slice, not monolithic&lt;/h2&gt;
+&lt;p&gt;Rather than try to build the whole app in one go (which got me into an unstable state), I’m going to pick a well-defined slice (for example: user management with roles, permissions, sign-up flows). I’ll document the slice’s boundaries, desired features, flows, and edge cases &lt;em&gt;before&lt;/em&gt; asking the AI to code.
+This gives clarity, reduces scope creep, and keeps the AI aligned with &lt;em&gt;exactly&lt;/em&gt; what I need.&lt;/p&gt;
+&lt;h2&gt;2. The AI writes the rubric first&lt;/h2&gt;
+&lt;p&gt;I’ve found that when I ask the AI to draft a rubric or outline best-practice approach (what patterns to use, what pitfalls to avoid, what architecture fits this slice) — and &lt;em&gt;then&lt;/em&gt; ask for code — the output is dramatically better.
+It means the AI does a kind of research-and-plan step, I review and refine, and then we build. In effect I’m using the AI as a co-designer/research-assistant, not just a code-machine.&lt;/p&gt;
+&lt;h2&gt;3. Reinforce the tracking habit&lt;/h2&gt;
+&lt;p&gt;I’ll continue maintaining the “living document” of preferences: naming conventions, tech stack decisions, architecture patterns, things I like / dislike. But this time it will be tied to &lt;em&gt;each slice&lt;/em&gt;. For example: “For user-management slice: use role-based access, no heavy abstraction, simple REST endpoints, unit tests for each endpoint.”
+This keeps context clean, consistent, and easier to manage as the app grows.&lt;/p&gt;
+&lt;h2&gt;4. Stay in the driver’s seat&lt;/h2&gt;
+&lt;p&gt;The core insight hasn’t changed: the AI is powerful, but it’s &lt;em&gt;not&lt;/em&gt; autopilot. It’s a conversation partner. I set expectations, define the boundaries, review the plan, and approve what moves forward. Holding the reins = better results.&lt;/p&gt;
+&lt;h2&gt;What I hope to achieve&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;A more stable, maintainable app architecture&lt;/li&gt;
+&lt;li&gt;Faster iteration because each slice is small and bounded&lt;/li&gt;
+&lt;li&gt;Higher code quality via upfront planning + research&lt;/li&gt;
+&lt;li&gt;More predictable outcomes instead of “AI went off in a random direction”&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Thanks for reading — if you’re using AI CLI tools too (or thinking of it), I hope these next-phase lessons help. I’ll share updates as I scoop through the slices and we’ll see how it goes.&lt;/p&gt;
+</content:encoded><author>Josh Tune</author></item><item><title>The Next Phase Didn’t Become a New Project — It Became lehi31.com</title><link>https://joshtune.com/posts/the-next-phase-didnt-become-a-new-project</link><guid isPermaLink="true">https://joshtune.com/posts/the-next-phase-didnt-become-a-new-project</guid><pubDate>Mon, 05 Jan 2026 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;In my last post, &lt;a href=&quot;/posts/from-three-weeks-with-ai-cli-to-starting-fresh-my-next-phase&quot;&gt;&lt;em&gt;From Three Weeks with AI CLI to Starting Fresh: My Next Phase&lt;/em&gt;&lt;/a&gt;, I talked about stepping back, resetting expectations, and moving toward a more deliberate, slice-by-slice way of working with AI tools.&lt;/p&gt;
+&lt;p&gt;I expected that “next phase” to start with a brand-new project.&lt;/p&gt;
+&lt;p&gt;That didn’t happen.&lt;/p&gt;
+&lt;p&gt;Instead, I went deep on &lt;strong&gt;lehi31.com&lt;/strong&gt; — a real site, with real users, real constraints, and zero tolerance for breaking things just to experiment.&lt;/p&gt;
+&lt;p&gt;And honestly? That turned out to be the more important next step.&lt;/p&gt;
+&lt;h2&gt;The Reality: Shipping Instead of Starting&lt;/h2&gt;
+&lt;p&gt;Rather than spinning up something new, I spent the last stretch doing unglamorous but meaningful work:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;polishing existing features&lt;/li&gt;
+&lt;li&gt;hardening permissions and auth&lt;/li&gt;
+&lt;li&gt;fixing edge cases users actually hit&lt;/li&gt;
+&lt;li&gt;improving navigation, layout, and admin UX&lt;/li&gt;
+&lt;li&gt;turning half-finished ideas into complete, survivable features&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;None of this fits neatly into a “new project” announcement — but all of it made the product better.&lt;/p&gt;
+&lt;h2&gt;What Actually Shipped&lt;/h2&gt;
+&lt;h3&gt;Recurring Events Became a Real Feature&lt;/h3&gt;
+&lt;p&gt;Recurring events moved from “mostly works” to &lt;em&gt;intentionally designed&lt;/em&gt;:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;planned and refactored repeat logic&lt;/li&gt;
+&lt;li&gt;migrations for excluded dates&lt;/li&gt;
+&lt;li&gt;safer update and delete behavior&lt;/li&gt;
+&lt;li&gt;protections against accidental deletes&lt;/li&gt;
+&lt;li&gt;collapsing and grouping events by week/month&lt;/li&gt;
+&lt;li&gt;clone-to-past-events flows&lt;/li&gt;
+&lt;li&gt;unit tests around deletion edge cases&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;This wasn’t flashy, but it was foundational. The calendar is now something you can trust.&lt;/p&gt;
+&lt;h3&gt;Permissions and Roles Grew Up&lt;/h3&gt;
+&lt;p&gt;A big chunk of work went into pulling permissions &lt;strong&gt;out of ad-hoc app logic and into the database&lt;/strong&gt;, where they belong:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;backend migrations for roles&lt;/li&gt;
+&lt;li&gt;RLS fixes&lt;/li&gt;
+&lt;li&gt;UI updates to reflect real permission state&lt;/li&gt;
+&lt;li&gt;removing feature flags that were no longer serving a purpose&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;That shift alone made the admin surface calmer and more predictable — fewer “why can I see this?” moments.&lt;/p&gt;
+&lt;h3&gt;Auth and User Management Became Operable&lt;/h3&gt;
+&lt;p&gt;This is the kind of work you only appreciate once users rely on your app:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;session expiry logout handling&lt;/li&gt;
+&lt;li&gt;admin/manage users UI&lt;/li&gt;
+&lt;li&gt;password reset without third-party gymnastics&lt;/li&gt;
+&lt;li&gt;email verification fixes and tests&lt;/li&gt;
+&lt;li&gt;switching from SendGrid to Resend to simplify email flows&lt;/li&gt;
+&lt;li&gt;fixing permission caching issues between DB and local state&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;None of this is exciting in isolation. Together, it makes the site &lt;em&gt;run&lt;/em&gt;.&lt;/p&gt;
+&lt;h3&gt;Navigation and Layout Got the Attention It Needed&lt;/h3&gt;
+&lt;p&gt;I also spent time on things that don’t show up in commit stats but absolutely show up in daily use:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;navigation hierarchy cleanup&lt;/li&gt;
+&lt;li&gt;clearer page separation (lesson schedules, assignments, etc.)&lt;/li&gt;
+&lt;li&gt;mobile breakpoints that actually work&lt;/li&gt;
+&lt;li&gt;more fluid desktop layouts&lt;/li&gt;
+&lt;li&gt;max-width constraints that make content readable&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;The site feels less like a collection of pages and more like a coherent tool now.&lt;/p&gt;
+&lt;h3&gt;Challenges, Goals, and the “Actual Product Surface”&lt;/h3&gt;
+&lt;p&gt;Features like goals, temple tracking, and the BOM reading challenge evolved rapidly:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;filtering to show only relevant/current items&lt;/li&gt;
+&lt;li&gt;archive and delete safety rules&lt;/li&gt;
+&lt;li&gt;root-only destructive actions&lt;/li&gt;
+&lt;li&gt;anonymous posting fixes&lt;/li&gt;
+&lt;li&gt;iterating on what deserved its own page vs living on the home view&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Some things were added. Some were simplified. One page was removed entirely.&lt;/p&gt;
+&lt;p&gt;That’s real product work: learning what sticks and cutting what doesn’t.&lt;/p&gt;
+&lt;h2&gt;What This Taught Me About AI-Assisted Development&lt;/h2&gt;
+&lt;p&gt;This phase still validated the ideas from my last post — just in a different way than I expected.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Slice-by-slice still works&lt;/strong&gt;, but the slices weren’t new features — they were production hardening tasks.&lt;/li&gt;
+&lt;li&gt;AI helped most with &lt;strong&gt;small, bounded changes&lt;/strong&gt;, reasoning through edge cases, and keeping momentum during boring work.&lt;/li&gt;
+&lt;li&gt;The win wasn’t “look how much code I generated.”
+The win was &lt;em&gt;shipping safely, repeatedly, without burning out or breaking users&lt;/em&gt;.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;In other words: the tooling mattered less than the discipline.&lt;/p&gt;
+&lt;h2&gt;What’s Next&lt;/h2&gt;
+&lt;p&gt;Because of this work, lehi31.com is now in a place where:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;new features are easier to add&lt;/li&gt;
+&lt;li&gt;permissions are predictable&lt;/li&gt;
+&lt;li&gt;auth flows don’t require fear&lt;/li&gt;
+&lt;li&gt;UI changes don’t cascade into chaos&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;That’s a better foundation than any half-finished new project would’ve been.&lt;/p&gt;
+&lt;p&gt;When I do start something fresh again, it’ll be because there’s a &lt;strong&gt;clear slice worth building&lt;/strong&gt;, not just because it feels like the “next thing” I should do.&lt;/p&gt;
+&lt;p&gt;If the last post was about &lt;strong&gt;resetting expectations&lt;/strong&gt;, this one is about &lt;strong&gt;accepting reality&lt;/strong&gt;:&lt;/p&gt;
+&lt;p&gt;Sometimes the next phase isn’t starting over.
+Sometimes it’s finishing what actually matters.&lt;/p&gt;
+</content:encoded><author>Josh Tune</author></item><item><title>Markdownify MCP: Turn (Almost) Anything Into Markdown</title><link>https://joshtune.com/posts/markdownify-mcp</link><guid isPermaLink="true">https://joshtune.com/posts/markdownify-mcp</guid><description>A delightful MCP server that converts PDFs, images, audio, Office docs, and web pages into clean Markdown—perfect for AI workflows and note-taking.</description><pubDate>Fri, 09 Jan 2026 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;If you’re building an AI-assisted workflow, you eventually hit the same wall: &lt;strong&gt;your inputs aren’t Markdown&lt;/strong&gt;.&lt;/p&gt;
+&lt;p&gt;That’s why I’m a big fan of &lt;a href=&quot;https://github.com/zcaceres/markdownify-mcp&quot;&gt;markdownify-mcp&lt;/a&gt; by &lt;a href=&quot;https://github.com/zcaceres&quot;&gt;@zcaceres&lt;/a&gt;: it’s a &lt;strong&gt;Model Context Protocol (MCP) server&lt;/strong&gt; that exposes a set of “convert this thing into Markdown” tools.&lt;/p&gt;
+&lt;h2&gt;Summary (Highlights)&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;Converts common formats to Markdown: &lt;strong&gt;PDF&lt;/strong&gt;, &lt;strong&gt;images&lt;/strong&gt;, &lt;strong&gt;audio (with transcription)&lt;/strong&gt;, &lt;strong&gt;DOCX&lt;/strong&gt;, &lt;strong&gt;XLSX&lt;/strong&gt;, &lt;strong&gt;PPTX&lt;/strong&gt;&lt;/li&gt;
+&lt;li&gt;Converts web content to Markdown: &lt;strong&gt;web pages&lt;/strong&gt;, &lt;strong&gt;YouTube transcripts&lt;/strong&gt;, &lt;strong&gt;Bing search results&lt;/strong&gt;&lt;/li&gt;
+&lt;li&gt;Also includes a handy “read a Markdown file” tool (&lt;code&gt;get-markdown-file&lt;/code&gt;) for pulling existing notes into context&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;Why This Is So Useful&lt;/h2&gt;
+&lt;p&gt;The magic is how it fits into a bigger workflow:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Ingestion&lt;/strong&gt;: take “messy” sources (slides, PDFs, screenshots, recordings) and normalize them into Markdown&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Processing&lt;/strong&gt;: summarize, tag, outline, or extract action items with your LLM of choice&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Sharing&lt;/strong&gt;: Markdown is the sweet spot for portability (GitHub, Obsidian, docs, wikis, PR descriptions)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;In other words: it’s a small tool that removes a big source of friction.&lt;/p&gt;
+&lt;h2&gt;A Few “This Immediately Helps Me” Use Cases&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;Turn a slide deck (&lt;code&gt;.pptx&lt;/code&gt;) into Markdown notes I can actually search and edit&lt;/li&gt;
+&lt;li&gt;Extract text + metadata from images/screenshots, then generate alt text or a write-up&lt;/li&gt;
+&lt;li&gt;Grab a YouTube transcript and turn it into an outline, summary, or study notes&lt;/li&gt;
+&lt;li&gt;Transcribe a short audio memo and convert it into a TODO list&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;Quick Start (From The Repo)&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;git clone https://github.com/zcaceres/markdownify-mcp
+cd markdownify-mcp
+pnpm install
+pnpm run build
+pnpm start
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;The repo notes that this will also install &lt;code&gt;uv&lt;/code&gt; and related Python dependencies.&lt;/p&gt;
+&lt;h2&gt;Wiring It Up In An MCP Desktop App&lt;/h2&gt;
+&lt;p&gt;The README includes an example config like this:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;{
+  &quot;mcpServers&quot;: {
+    &quot;markdownify&quot;: {
+      &quot;command&quot;: &quot;node&quot;,
+      &quot;args&quot;: [
+        &quot;{ABSOLUTE PATH TO FILE HERE}/dist/index.js&quot;
+      ],
+      &quot;env&quot;: {
+        &quot;UV_PATH&quot;: &quot;/path/to/uv&quot;
+      }
+    }
+  }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;One Tiny Caveat&lt;/h2&gt;
+&lt;p&gt;The project is actively evolving; there’s even a request for help testing Windows support. If you’re on Windows and can validate a PR, you could make a real impact.&lt;/p&gt;
+&lt;h2&gt;Go Check It Out&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;Repo: https://github.com/zcaceres/markdownify-mcp&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;If you like the idea of “turn everything into Markdown,” this is absolutely worth a star.&lt;/p&gt;
+</content:encoded><author>Josh Tune</author></item><item><title>Vibe Kanban: I’m a Fan</title><link>https://joshtune.com/posts/vibe-kanban-im-a-fan</link><guid isPermaLink="true">https://joshtune.com/posts/vibe-kanban-im-a-fan</guid><description>Vibe Kanban feels like a simple workflow upgrade that amplifies what I can do without getting in the way.</description><pubDate>Fri, 09 Jan 2026 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;I’ve been using &lt;a href=&quot;https://github.com/BloopAI/vibe-kanban&quot;&gt;Vibe Kanban&lt;/a&gt; lately, and it clicked fast. This post is a live example: I made a card (“write a quick blog entry”), then iterated until it sounded like me.&lt;/p&gt;
+&lt;p&gt;What I like is the combo of simple structure + AI help:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Capture intent as a card, not a vague mental note.&lt;/li&gt;
+&lt;li&gt;Break work into small, finishable slices.&lt;/li&gt;
+&lt;li&gt;Make tradeoffs obvious by keeping the board honest.&lt;/li&gt;
+&lt;li&gt;Use AI to turn “I want this” into steps and a first draft, without giving up control.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;It’s been a nice little amplifier for writing, refactors, automations, and docs — basically anything that benefits from momentum and clarity.&lt;/p&gt;
+&lt;p&gt;A coworker also pointed me at Steve Yegge’s &lt;a href=&quot;https://github.com/steveyegge/gastown&quot;&gt;Gastown&lt;/a&gt;, which seems to rhyme with the same idea: give work a concrete shape and keep the feedback loop tight.&lt;/p&gt;
+&lt;p&gt;Anyway: I’m a fan. If you want a lightweight way to stay oriented and ship more reliably, Vibe Kanban is worth a try.&lt;/p&gt;
+</content:encoded><author>Josh Tune</author></item><item><title>Spec Kit: Spec-driven development for AI-assisted coding</title><link>https://joshtune.com/posts/spec-kit</link><guid isPermaLink="true">https://joshtune.com/posts/spec-kit</guid><description>A mock blog entry on GitHub’s Spec Kit and how it changes the way I work with coding agents.</description><pubDate>Sat, 10 Jan 2026 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;I’ve been watching the “AI coding agent” space explode: faster scaffolds, faster refactors, faster everything. The downside is also obvious: when you move fast, you can end up with a pile of code that &lt;em&gt;kind of&lt;/em&gt; works but doesn’t match what you actually meant.&lt;/p&gt;
+&lt;p&gt;That’s why GitHub’s &lt;strong&gt;Spec Kit&lt;/strong&gt; caught my eye.&lt;/p&gt;
+&lt;p&gt;Quick note: I haven’t personally tried Spec Kit yet — these are my notes based on what I’m hearing (and what I watched a coworker do with it).&lt;/p&gt;
+&lt;p&gt;Spec Kit is an open source toolkit that pushes you toward &lt;em&gt;spec-driven development&lt;/em&gt;: write down what you want, why you want it, and the constraints you care about — and then let an agent implement from that spec instead of guessing from a vague prompt.&lt;/p&gt;
+&lt;p&gt;Repo: https://github.com/github/spec-kit&lt;br /&gt;
+Docs: https://github.github.io/spec-kit/&lt;/p&gt;
+&lt;h2&gt;The moment it clicked for me&lt;/h2&gt;
+&lt;p&gt;A coworker of mine used Spec Kit on a POC project and the “shape” of the work looked different right away:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Less back-and-forth about what we meant&lt;/li&gt;
+&lt;li&gt;Fewer surprise abstractions&lt;/li&gt;
+&lt;li&gt;More predictable output across multiple agent runs&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;The punchline: when the intent is captured in a spec, the agent doesn’t have to invent it.&lt;/p&gt;
+&lt;h2&gt;The Spec Kit workflow (high level)&lt;/h2&gt;
+&lt;p&gt;Spec Kit’s “happy path” looks like:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Establish your project principles (“constitution”)&lt;/li&gt;
+&lt;li&gt;Describe what you want to build (the spec)&lt;/li&gt;
+&lt;li&gt;Convert it into a technical plan (stack + architecture)&lt;/li&gt;
+&lt;li&gt;Break the plan into tasks&lt;/li&gt;
+&lt;li&gt;Implement the tasks&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;If you’ve used agents before, you’ll recognize the steps — the difference is Spec Kit makes them explicit and repeatable.&lt;/p&gt;
+&lt;h2&gt;A concrete example (mocked)&lt;/h2&gt;
+&lt;p&gt;Here’s the kind of prompt sequence that makes Spec Kit feel powerful. You don’t start with “write me code”. You start with constraints and outcomes.&lt;/p&gt;
+&lt;h3&gt;1) Create a constitution&lt;/h3&gt;
+&lt;p&gt;This is the part most teams skip, and it’s the part that saves you later.&lt;/p&gt;
+&lt;p&gt;Example:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;/speckit.constitution
+Create principles focused on: readable code, tests for critical paths, predictable UX, and performance budgets.
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;What I’d put in here (for my own projects):&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Prefer boring solutions over clever ones&lt;/li&gt;
+&lt;li&gt;Tests for core flows before shipping&lt;/li&gt;
+&lt;li&gt;Small PRs, no huge rewrites&lt;/li&gt;
+&lt;li&gt;Explicit error handling and observability&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;2) Specify the feature (the “what” and “why”)&lt;/h3&gt;
+&lt;p&gt;Example:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;/speckit.specify
+Build a feature that lets users share a read-only link to a board. The link expires after 7 days. Viewers cannot see private boards. Include analytics for link creation and link visits.
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;This is where you define outcomes, boundaries, and edge cases. If you do it here, you don’t have to fight the agent later.&lt;/p&gt;
+&lt;h3&gt;3) Provide a technical plan (the “how”)&lt;/h3&gt;
+&lt;p&gt;Example:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;/speckit.plan
+Use Postgres for storage. Use server-rendered pages for the share view. Use signed URLs with an expiry claim. Track events via our existing analytics client.
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;4) Generate tasks, then implement&lt;/h3&gt;
+&lt;p&gt;Example:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;/speckit.tasks
+/speckit.implement
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Now the agent is implementing against your constraints, not improvising them.&lt;/p&gt;
+&lt;h2&gt;What I like about Spec Kit&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;It turns “agent prompting” into an artifact.&lt;/strong&gt; The spec and plan become part of the project’s memory.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;It reduces drift.&lt;/strong&gt; If you rerun the agent later, you’re not starting from scratch.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;It makes reviews easier.&lt;/strong&gt; You can review intent (spec) separately from execution (implementation).&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;Where it might not fit&lt;/h2&gt;
+&lt;p&gt;I don’t think Spec Kit is necessary for every change. If I’m renaming a variable or tweaking CSS, I don’t need a constitution and a task list.&lt;/p&gt;
+&lt;p&gt;But for:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;New features&lt;/li&gt;
+&lt;li&gt;Cross-cutting refactors&lt;/li&gt;
+&lt;li&gt;Anything that spans backend + frontend&lt;/li&gt;
+&lt;li&gt;Anything where requirements are “obvious in someone’s head” but not written down&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;…this is exactly the kind of structure that keeps an agent from going off the rails.&lt;/p&gt;
+&lt;h2&gt;If you want to try it&lt;/h2&gt;
+&lt;p&gt;From the Spec Kit README, you can install the &lt;code&gt;specify&lt;/code&gt; CLI with &lt;code&gt;uv&lt;/code&gt;:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;uv tool install specify-cli --from git+https://github.com/github/spec-kit.git
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Then initialize a project and pick an agent:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;specify init . --ai codex
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;(That &lt;code&gt;--ai codex&lt;/code&gt; bit is particularly nice: Spec Kit explicitly supports multiple agents, so you can keep your workflow consistent even if the tools change.)&lt;/p&gt;
+&lt;h2&gt;Closing thought&lt;/h2&gt;
+&lt;p&gt;My coworker’s use of Spec Kit made something really clear: the bottleneck isn’t writing code anymore — it’s &lt;em&gt;capturing intent&lt;/em&gt;.&lt;/p&gt;
+&lt;p&gt;Spec Kit is a good forcing function for that. And if you’re already building with agents, it’s one of the most practical ways I’ve seen to get “speed” without losing “clarity”.&lt;/p&gt;
+</content:encoded><author>Josh Tune</author></item><item><title>MCP in Front of APIs: What That Means (and Why It Matters)</title><link>https://joshtune.com/posts/mcp-in-front-of-apis</link><guid isPermaLink="true">https://joshtune.com/posts/mcp-in-front-of-apis</guid><description>Why teams are putting Model Context Protocol (MCP) servers “in front of” internal APIs—and how it changes developer workflows, architecture, and governance.</description><pubDate>Fri, 16 Jan 2026 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;There’s a phrase you’ll hear a lot right now in companies adopting AI assistants: &lt;strong&gt;“We should put MCP in front of our APIs.”&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;If you translate it into plain English, it usually means:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;“Let’s create a standard, governable layer that exposes our systems as AI-usable tools, so any MCP-capable assistant can safely call them.”&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;This post unpacks what that means for you day-to-day as a developer, and what it implies for software development more broadly.&lt;/p&gt;
+&lt;h2&gt;The 30-second version&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;MCP (Model Context Protocol)&lt;/strong&gt; is a standard way for an AI app to discover and call “tools” provided by a server (plus access “resources” like files/data).&lt;/li&gt;
+&lt;li&gt;Putting &lt;strong&gt;MCP “in front of APIs”&lt;/strong&gt; means wrapping existing HTTP/gRPC/GraphQL endpoints behind an MCP server (or MCP gateway) so assistants can use them consistently.&lt;/li&gt;
+&lt;li&gt;The “big deal” is less about the protocol and more about &lt;strong&gt;standardizing AI-to-system integration&lt;/strong&gt;: auth, policy, auditing, safety controls, and tool design.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;What MCP is (in practical terms)&lt;/h2&gt;
+&lt;p&gt;MCP is a protocol that lets an AI-enabled client (an assistant, IDE, or agent runner) connect to one or more &lt;strong&gt;MCP servers&lt;/strong&gt; that provide:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Tools&lt;/strong&gt;: functions the assistant can call (capabilities with arguments + structured outputs)&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Resources&lt;/strong&gt;: things the assistant can read (and sometimes write), like documents, records, or indexes&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Prompts/templates&lt;/strong&gt;: reusable guidance the client can pull from the server&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;In practice, MCP becomes the “plug shape” for integrating assistants with real systems.&lt;/p&gt;
+&lt;h2&gt;What “MCP in front of APIs” usually means architecturally&lt;/h2&gt;
+&lt;p&gt;Most orgs land on one of these patterns (or a mix):&lt;/p&gt;
+&lt;h3&gt;1) “Adapter” MCP servers (per domain/system)&lt;/h3&gt;
+&lt;p&gt;Each key system gets an MCP server that translates MCP tool calls into API calls:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;jira-mcp&lt;/code&gt; exposes &lt;code&gt;create_issue&lt;/code&gt;, &lt;code&gt;search_issues&lt;/code&gt;, &lt;code&gt;add_comment&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;billing-mcp&lt;/code&gt; exposes &lt;code&gt;get_invoice&lt;/code&gt;, &lt;code&gt;refund_payment&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;crm-mcp&lt;/code&gt; exposes &lt;code&gt;lookup_customer&lt;/code&gt;, &lt;code&gt;update_contact&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;This tends to work well when teams own their domain and can evolve tools alongside APIs.&lt;/p&gt;
+&lt;h3&gt;2) An “MCP gateway” (centralized front door)&lt;/h3&gt;
+&lt;p&gt;A shared team builds a gateway that:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;publishes a curated set of tools across multiple backends&lt;/li&gt;
+&lt;li&gt;handles auth, policy, logging, throttling, approvals&lt;/li&gt;
+&lt;li&gt;maps “assistant-friendly” tool shapes to messy internal endpoints&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;This can reduce duplication, but it also becomes a platform that needs clear ownership.&lt;/p&gt;
+&lt;h3&gt;3) MCP as a policy layer on top of an API gateway&lt;/h3&gt;
+&lt;p&gt;Some teams already have API gateways (Kong, Apigee, Envoy, etc.). In that world, MCP is often an extra layer that focuses on:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;tool discovery, schema, and responses optimized for LLM usage&lt;/li&gt;
+&lt;li&gt;assistant-specific controls (human approvals, scoped credentials, audit trails by “assistant session”)&lt;/li&gt;
+&lt;li&gt;safety constraints (redaction, filtering, allowlists) that are distinct from normal API consumers&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;What it means for you as a developer&lt;/h2&gt;
+&lt;h3&gt;You’ll design tools, not just endpoints&lt;/h3&gt;
+&lt;p&gt;APIs for humans (or normal services) can be “generic and composable.” Tools for assistants should be:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;narrow and high-signal&lt;/strong&gt;: fewer “do anything” parameters, more purpose-built actions&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;hard to misuse&lt;/strong&gt;: guardrails in the schema; limited free-form text&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;idempotent when possible&lt;/strong&gt;: safe retries and clear “already done” semantics&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;explicit about side effects&lt;/strong&gt;: a tool that changes state should say so in its name and description&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;One good mental model: &lt;strong&gt;your tool schema is part of your UX&lt;/strong&gt;—except your “user” is an LLM.&lt;/p&gt;
+&lt;h3&gt;You’ll care more about “how the model fails”&lt;/h3&gt;
+&lt;p&gt;With normal API consumers, errors mostly hit logs and dashboards. With AI tool-calling, errors often become:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;repeated retries (sometimes with slightly mutated inputs)&lt;/li&gt;
+&lt;li&gt;partial plans that keep going after a failure&lt;/li&gt;
+&lt;li&gt;confusing user experiences if the assistant can’t explain what happened&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;So you’ll end up investing more in:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;stable error shapes (machine-readable codes + human-readable summaries)&lt;/li&gt;
+&lt;li&gt;safe defaults and constraints&lt;/li&gt;
+&lt;li&gt;clear return values that help the assistant decide the next action&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;You’ll build “AI integration tests”&lt;/h3&gt;
+&lt;p&gt;If your org leans into agents, you may be asked to validate flows like:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;“Can the assistant create a ticket, attach logs, and notify a channel?”&lt;/li&gt;
+&lt;li&gt;“Can it fetch the right customer record without overfetching data?”&lt;/li&gt;
+&lt;li&gt;“Can it refuse unsafe actions unless an approval step is present?”&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;That’s less like unit testing and more like &lt;strong&gt;contract testing&lt;/strong&gt; plus &lt;strong&gt;workflow simulation&lt;/strong&gt;.&lt;/p&gt;
+&lt;h3&gt;You’ll spend time on governance plumbing (even if you don’t want to)&lt;/h3&gt;
+&lt;p&gt;When tools can touch real systems, questions show up fast:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Who is the “caller”? The end user, the assistant, a service account?&lt;/li&gt;
+&lt;li&gt;What permissions does the tool run with? How is least-privilege enforced?&lt;/li&gt;
+&lt;li&gt;How do we audit “assistant performed action X because user asked Y”?&lt;/li&gt;
+&lt;li&gt;How do we prevent data leaks into the model context or logs?&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;As a developer, expect to partner more with security, platform, and compliance teams.&lt;/p&gt;
+&lt;h2&gt;What it means for software development (the bigger shift)&lt;/h2&gt;
+&lt;h3&gt;APIs become “AI-addressable”&lt;/h3&gt;
+&lt;p&gt;Historically, we built APIs for:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;UI clients&lt;/li&gt;
+&lt;li&gt;other services&lt;/li&gt;
+&lt;li&gt;partners&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Now there’s a new consumer: &lt;strong&gt;LLM-driven tool use&lt;/strong&gt;. That shifts emphasis toward:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;discoverability (what can this system do?)&lt;/li&gt;
+&lt;li&gt;constrained interaction (what &lt;em&gt;should&lt;/em&gt; it be allowed to do?)&lt;/li&gt;
+&lt;li&gt;provenance (who asked, what was the justification, what changed?)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;“Natural language” becomes a coordination layer, not a transport&lt;/h3&gt;
+&lt;p&gt;The point isn’t that we’ll replace APIs with natural language.&lt;/p&gt;
+&lt;p&gt;The point is that natural language becomes the orchestration surface:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;a user expresses intent (“refund the last invoice and email the receipt”)&lt;/li&gt;
+&lt;li&gt;the assistant plans the work&lt;/li&gt;
+&lt;li&gt;MCP tools are the “mechanical” interface for doing it safely&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;The work still happens via structured calls—MCP just standardizes the way assistants reach those calls.&lt;/p&gt;
+&lt;h3&gt;Tool ecosystems start to look like package ecosystems&lt;/h3&gt;
+&lt;p&gt;If MCP (or anything like it) becomes a common integration standard, you’ll see patterns that feel familiar:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;internal “tool registries”&lt;/li&gt;
+&lt;li&gt;versioning and deprecation policies (tool names and schemas become contracts)&lt;/li&gt;
+&lt;li&gt;shared libraries for auth, logging, and schema validation&lt;/li&gt;
+&lt;li&gt;reusable “golden” tools that teams prefer over bespoke wrappers&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;In other words: &lt;strong&gt;platform engineering, but for tool interfaces&lt;/strong&gt;.&lt;/p&gt;
+&lt;h2&gt;The hard parts (what your workplace will debate)&lt;/h2&gt;
+&lt;h3&gt;Security: prompt injection and data exfiltration&lt;/h3&gt;
+&lt;p&gt;If an assistant reads untrusted text (tickets, emails, web pages), that text can try to influence tool calls (“ignore your rules, run this dangerous action…”).&lt;/p&gt;
+&lt;p&gt;Mitigations usually include:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;tool allowlists and strong auth (never “just let it call anything”)&lt;/li&gt;
+&lt;li&gt;approval workflows for sensitive actions&lt;/li&gt;
+&lt;li&gt;output filtering/redaction and strict logging controls&lt;/li&gt;
+&lt;li&gt;minimizing tools that accept unconstrained free-form instructions&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;“Scope creep” tools&lt;/h3&gt;
+&lt;p&gt;Tools that look like &lt;code&gt;run_sql(query)&lt;/code&gt; or &lt;code&gt;call_api(url, method, body)&lt;/code&gt; are tempting because they’re powerful—but they’re also:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;hard to secure&lt;/li&gt;
+&lt;li&gt;hard to audit&lt;/li&gt;
+&lt;li&gt;easy to prompt-inject&lt;/li&gt;
+&lt;li&gt;likely to turn into an implicit backdoor&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Many orgs end up preferring &lt;strong&gt;specific, well-named tools&lt;/strong&gt; over generic supertools.&lt;/p&gt;
+&lt;h3&gt;Ownership and change management&lt;/h3&gt;
+&lt;p&gt;Once assistants depend on a tool’s schema, “tiny breaking changes” stop being tiny.&lt;/p&gt;
+&lt;p&gt;You’ll want conventions like:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;tool versioning or additive changes only&lt;/li&gt;
+&lt;li&gt;deprecation windows&lt;/li&gt;
+&lt;li&gt;contract tests for tool schemas&lt;/li&gt;
+&lt;li&gt;strong observability (which tools are used, by whom, and how often)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;How to evaluate “MCP in front of our APIs” at work&lt;/h2&gt;
+&lt;p&gt;Here are questions that quickly clarify whether the idea is serious engineering or just hype:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Who is the MCP client?&lt;/strong&gt; (IDE? internal agent runner? Chat UI? multiple?)&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Where does auth live?&lt;/strong&gt; (per-user OAuth? service accounts? short-lived tokens?)&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;What’s the approval model for side effects?&lt;/strong&gt; (human-in-the-loop? limits?)&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;What is the audit story?&lt;/strong&gt; (trace from user prompt → tool call → backend request → data change)&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;What’s the blast radius?&lt;/strong&gt; (tool allowlists by environment; read-only by default)&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;How do we prevent overexposure?&lt;/strong&gt; (least privilege + “only return what’s needed”)&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;How do we ship changes safely?&lt;/strong&gt; (schema compatibility, staged rollout, monitoring)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;A pragmatic takeaway&lt;/h2&gt;
+&lt;p&gt;If your company is serious about agents, “MCP in front of APIs” is basically a bet that:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;assistant integrations should be &lt;strong&gt;standardized&lt;/strong&gt; (not one-off prompt glue)&lt;/li&gt;
+&lt;li&gt;tool access should be &lt;strong&gt;governed&lt;/strong&gt; (not a pile of ad-hoc scripts)&lt;/li&gt;
+&lt;li&gt;platform teams should provide a &lt;strong&gt;safe, reusable interface&lt;/strong&gt; to internal systems&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;As a developer, that’s both an opportunity (better leverage, fewer brittle integrations) and a responsibility (tool design, safety, and change management become part of the job).&lt;/p&gt;
+</content:encoded><author>Josh Tune</author></item><item><title>Living Like This: How Top Developers Work with AI Coding Assistants</title><link>https://joshtune.com/posts/mastering-ai-coding-assistants</link><guid isPermaLink="true">https://joshtune.com/posts/mastering-ai-coding-assistants</guid><description>Five essential techniques from top agentic engineers: PRD-first development, modular rules, commandified workflows, context resets, and system evolution.</description><pubDate>Fri, 16 Jan 2026 00:00:00 GMT</pubDate><content:encoded>&lt;blockquote&gt;
+&lt;p&gt;Based on &lt;a href=&quot;https://www.youtube.com/watch?v=ttdWPDmBN_4&quot;&gt;this video&lt;/a&gt;. My notes on becoming a better developer with AI assistants.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;&amp;lt;iframe width=&quot;560&quot; height=&quot;315&quot; src=&quot;https://www.youtube.com/embed/ttdWPDmBN_4&quot; title=&quot;YouTube video player&quot; frameborder=&quot;0&quot; allow=&quot;accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share&quot; allowfullscreen&amp;gt;&amp;lt;/iframe&amp;gt;&lt;/p&gt;
+&lt;hr /&gt;
+&lt;p&gt;You&apos;re probably leaving most of your AI coding assistant&apos;s potential on the table. Not because the tools aren&apos;t powerful—they are. But because you don&apos;t have a system.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;The core principle:&lt;/strong&gt; AI output quality = context quality. Everything below serves this.&lt;/p&gt;
+&lt;h2&gt;1. PRD-First Development&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;What it is:&lt;/strong&gt; A single markdown document defining your entire project scope—your north star.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;What goes in:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Target users &amp;amp; mission statement&lt;/li&gt;
+&lt;li&gt;What&apos;s in scope / out of scope (be explicit)&lt;/li&gt;
+&lt;li&gt;Tech stack &amp;amp; architecture decisions&lt;/li&gt;
+&lt;li&gt;Feature list with priorities&lt;/li&gt;
+&lt;li&gt;Non-functional requirements (performance, security)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Implementation:&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;Create a &lt;code&gt;/create-prd&lt;/code&gt; command in &lt;code&gt;.claude/commands/create-prd.md&lt;/code&gt;:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;# Create PRD Command
+
+Based on our conversation, generate a PRD at `docs/prd.md` with:
+
+## Project Overview
+
+- Target users
+- Mission statement
+- Success metrics
+
+## Scope
+
+- In scope: [explicit list]
+- Out of scope: [what we&apos;re NOT building]
+
+## Architecture
+
+- Tech stack with rationale
+- Key architectural decisions
+- Third-party services
+
+## Features
+
+Priority-ordered feature list with descriptions
+
+## Technical Constraints
+
+- Performance requirements
+- Security requirements
+- Browser/platform support
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;The workflow:&lt;/strong&gt;&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Discuss what you want to build with your AI&lt;/li&gt;
+&lt;li&gt;Run &lt;code&gt;/create-prd&lt;/code&gt; to generate &lt;code&gt;docs/prd.md&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Review and refine the PRD&lt;/li&gt;
+&lt;li&gt;Daily question: &quot;Based on the PRD, what should we build next?&quot;&lt;/li&gt;
+&lt;li&gt;Update PRD as project evolves&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;&lt;strong&gt;Why it works:&lt;/strong&gt; Your AI understands the bigger picture. Features connect. Context accumulates instead of getting lost. When your AI reads the PRD before planning, it makes decisions aligned with your overall vision—not just the immediate task.&lt;/p&gt;
+&lt;h2&gt;2. Modular Rules Architecture&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;The problem:&lt;/strong&gt; Most global rules files are too long. Every word loads into every conversation, wasting context.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;The solution:&lt;/strong&gt; Keep global rules short. Load task-specific rules only when needed.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Global rules structure&lt;/strong&gt; (&lt;code&gt;.claude/claude.md&lt;/code&gt;):&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;# Project Rules
+
+## Tech Stack
+
+- Frontend: React + TypeScript + Vite
+- Backend: Node.js + Express
+- Database: PostgreSQL
+- Deployment: Vercel + Railway
+
+## Project Structure
+
+/src
+/components
+/api
+/lib
+/types
+
+## Core Commands
+
+- npm run dev - Start dev server
+- npm test - Run tests
+- npm run build - Production build
+
+## Code Conventions
+
+- Use named exports
+- Prefer const over let
+- TypeScript strict mode
+- ESLint + Prettier
+
+## Reference Documentation
+
+When working on specific tasks, read these:
+
+- API Development: `.claude/reference/api-development.md`
+- Frontend Components: `.claude/reference/frontend-components.md`
+- Database: `.claude/reference/database.md`
+- Deployment: `.claude/reference/deployment.md`
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;Task-specific reference&lt;/strong&gt; (&lt;code&gt;.claude/reference/api-development.md&lt;/code&gt;):&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;# API Development Reference
+
+## Endpoint Structure
+
+All endpoints in `/src/api/routes/`
+
+## Error Handling
+
+- Use custom ApiError class
+- Return consistent error shapes:
+  { error: string, code: string, details?: object }
+
+## Validation
+
+- Zod schemas for request validation
+- Validate at route handler entry
+
+## Authentication
+
+- JWT tokens via middleware
+- Extract user from req.user
+- Use requireAuth() middleware
+
+## Testing
+
+- Supertest for integration tests
+- Mock external services
+- Test error cases
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;Implementation steps:&lt;/strong&gt;&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Create &lt;code&gt;.claude/&lt;/code&gt; directory in your project root&lt;/li&gt;
+&lt;li&gt;Write short global rules (&amp;lt; 200 lines)&lt;/li&gt;
+&lt;li&gt;Create &lt;code&gt;.claude/reference/&lt;/code&gt; directory&lt;/li&gt;
+&lt;li&gt;Split specialized knowledge into reference docs (can be 500-1000+ lines each)&lt;/li&gt;
+&lt;li&gt;Reference them in global rules&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;&lt;strong&gt;Why it works:&lt;/strong&gt; Your AI gets comprehensive context without overwhelming the context window. A 200-line global rules file + 800-line API reference (loaded only when needed) beats a 2,000-line rules file that wastes tokens on frontend conventions when you&apos;re building APIs.&lt;/p&gt;
+&lt;h2&gt;3. Commandify Everything&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;The rule:&lt;/strong&gt; Prompt something twice? Make it a command.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Essential commands to create:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;/prime&lt;/code&gt; - Load project context&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;/create-prd&lt;/code&gt; - Generate PRD&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;/create-plan&lt;/code&gt; - Output structured plan&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;/execute&lt;/code&gt; - Implement from plan&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;/commit&lt;/code&gt; - Git commit with proper message&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;/review&lt;/code&gt; - Code review checklist&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Example: The Prime Command&lt;/strong&gt; (&lt;code&gt;.claude/commands/prime.md&lt;/code&gt;):&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;# Prime Command
+
+Load context needed to start working:
+
+1. Read PRD at `docs/prd.md`
+2. Review recent commits: `git log -10 --oneline`
+3. Check current status: `git status`
+4. Read global rules at `.claude/claude.md`
+5. Scan project structure
+6. Identify blocking issues or incomplete work
+
+Output a summary:
+
+- **Current state:** Brief project status
+- **Recent changes:** What was done recently
+- **From PRD:** What we&apos;re working toward
+- **Suggested next steps:** Based on PRD priorities
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;Example: The Plan Command&lt;/strong&gt; (&lt;code&gt;.claude/commands/create-plan.md&lt;/code&gt;):&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;# Create Plan Command
+
+Generate a structured plan at `docs/plans/[feature-name].md`:
+
+## Feature Overview
+
+- Feature name
+- User story
+- Success criteria
+
+## Technical Approach
+
+- Architecture decisions
+- Files to create/modify
+- Dependencies needed
+
+## Implementation Tasks
+
+1. [Specific task 1]
+2. [Specific task 2]
+   ...
+
+## Testing Strategy
+
+- Unit tests to write
+- Integration tests
+- Manual testing steps
+
+## Validation Checklist
+
+- [ ] Tests passing
+- [ ] Linting clean
+- [ ] Types valid
+- [ ] Manual testing complete
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;Implementation:&lt;/strong&gt;&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Create &lt;code&gt;.claude/commands/&lt;/code&gt; directory&lt;/li&gt;
+&lt;li&gt;Add one command at a time (start with &lt;code&gt;/prime&lt;/code&gt;)&lt;/li&gt;
+&lt;li&gt;Test and refine each command&lt;/li&gt;
+&lt;li&gt;Build your command library over 2-3 weeks&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;One command replaces 5-10 minutes of setup. Saves thousands of keystrokes over time.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Get started:&lt;/strong&gt; Check out the &lt;a href=&quot;https://github.com/coleam00/habit-tracker/tree/main&quot;&gt;Habit Tracker repo&lt;/a&gt; with all command templates.&lt;/p&gt;
+&lt;h2&gt;4. The Context Reset&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;The pattern:&lt;/strong&gt; Always restart your conversation between planning and execution.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Why:&lt;/strong&gt; Planning is exploratory—full of dead ends, tangents, and options you rejected. If you go straight from planning to coding, all that noise pollutes the context window. Your AI has less room to reason about implementation.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Planning phase:&lt;/strong&gt;&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;code&gt;/prime&lt;/code&gt; - Load project context&lt;/li&gt;
+&lt;li&gt;&quot;Based on PRD, what&apos;s next?&quot; - Discuss options&lt;/li&gt;
+&lt;li&gt;Read relevant code, explore approaches&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;/create-plan&lt;/code&gt; - Output to &lt;code&gt;docs/plans/feature.md&lt;/code&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;&lt;strong&gt;[Clear context - close conversation or run &lt;code&gt;/clear&lt;/code&gt;]&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Execution phase:&lt;/strong&gt;&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;New conversation&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;/execute docs/plans/feature.md&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;AI reads ONLY the plan (not the messy planning conversation)&lt;/li&gt;
+&lt;li&gt;Clean context = focused implementation&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;&lt;strong&gt;The execute command structure:&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;# Execute Command
+
+Implement the plan at the specified path.
+
+1. Read the plan document
+2. Understand all tasks and acceptance criteria
+3. For each task:
+   - Implement the change
+   - Write tests
+   - Run validation
+4. After all tasks:
+   - Run full test suite
+   - Check linting
+   - Verify types
+   - Manual smoke test
+5. Report any issues or deviations from plan
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;Why it works:&lt;/strong&gt; The plan contains everything needed (what to build, how to build it, files to change, tests to write). The planning conversation contained everything NOT needed (rejected ideas, exploratory reading, dead ends). Separating them gives your AI maximum reasoning space.&lt;/p&gt;
+&lt;h2&gt;5. System Evolution Mindset&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;The insight:&lt;/strong&gt; Every bug is an opportunity to strengthen your AI.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Wrong approach:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Find bug → fix manually → move on → same bug next week&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Right approach:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Find bug → &quot;What in my rules/commands allowed this?&quot; → Fix the system → Never happens again&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Implementation workflow:&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;After completing a feature and finding issues:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Document what went wrong&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;Issues found:
+- AI used `require()` instead of `import`
+- Forgot to run linter before committing
+- Didn&apos;t update tests in `/tests/api/`
+- Validation logic had edge case bug
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Start reflection conversation&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;I noticed these issues after implementation. Let&apos;s review:
+- The rules in `.claude/claude.md`
+- The commands we used: `/create-plan` and `/execute`
+- The plan document at `docs/plans/feature.md`
+
+What should we improve so these issues don&apos;t happen again?
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Let AI propose fixes&lt;/strong&gt;
+AI might suggest:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Add import rule to global rules&lt;/li&gt;
+&lt;li&gt;Update &lt;code&gt;/execute&lt;/code&gt; command to include linting step&lt;/li&gt;
+&lt;li&gt;Add test update requirement to plan template&lt;/li&gt;
+&lt;li&gt;Create validation reference doc&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Implement improvements&lt;/strong&gt;
+Update your system files based on suggestions&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Validate next feature&lt;/strong&gt;
+Those issues shouldn&apos;t recur&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;&lt;strong&gt;Common fix patterns:&lt;/strong&gt;&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;Problem&lt;/th&gt;
+&lt;th&gt;System Fix&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;Wrong import style&lt;/td&gt;
+&lt;td&gt;Add one-line rule in global rules&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Forgets tests&lt;/td&gt;
+&lt;td&gt;Add &quot;Tests&quot; section to plan template&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Doesn&apos;t understand auth&lt;/td&gt;
+&lt;td&gt;Create &lt;code&gt;reference/authentication.md&lt;/code&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Skips validation&lt;/td&gt;
+&lt;td&gt;Add validation steps to &lt;code&gt;/execute&lt;/code&gt; command&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Inconsistent error handling&lt;/td&gt;
+&lt;td&gt;Create &lt;code&gt;reference/error-handling.md&lt;/code&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Doesn&apos;t run linter&lt;/td&gt;
+&lt;td&gt;Add linting to &lt;code&gt;/execute&lt;/code&gt; validation steps&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Misunderstands architecture&lt;/td&gt;
+&lt;td&gt;Expand PRD architecture section&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Hardcodes values&lt;/td&gt;
+&lt;td&gt;Add &quot;No magic numbers&quot; to code conventions&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;&lt;strong&gt;Why it compounds:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Week 1: 20 mistake types&lt;/li&gt;
+&lt;li&gt;Week 4: 10 mistake types&lt;/li&gt;
+&lt;li&gt;Week 8: 5 mistake types&lt;/li&gt;
+&lt;li&gt;Week 16: Rarely new mistakes&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Your AI gets more reliable every day. Not because the model improved—because your system evolved.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;The mindset shift:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;From: &quot;This AI is unreliable, I have to fix everything&quot;&lt;/li&gt;
+&lt;li&gt;To: &quot;This bug reveals a gap in my system, let me close that gap&quot;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;One is frustrating. The other is empowering and compounds.&lt;/p&gt;
+&lt;h2&gt;The Daily Workflow&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;Morning:&lt;/strong&gt;&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;code&gt;/prime&lt;/code&gt; - Load project context&lt;/li&gt;
+&lt;li&gt;&quot;Based on PRD, what&apos;s next?&quot; - Get direction&lt;/li&gt;
+&lt;li&gt;Discuss and explore approaches&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;/create-plan&lt;/code&gt; - Output structured plan&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;&lt;strong&gt;[Context reset - close conversation]&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Implementation:&lt;/strong&gt;&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;New conversation&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;/execute docs/plans/feature.md&lt;/code&gt; - Clean execution&lt;/li&gt;
+&lt;li&gt;Build the feature with clean context&lt;/li&gt;
+&lt;li&gt;Validate manually after implementation&lt;/li&gt;
+&lt;li&gt;Note any issues&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;&lt;strong&gt;System Evolution:&lt;/strong&gt;&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Document problems encountered&lt;/li&gt;
+&lt;li&gt;&quot;Let&apos;s improve the system to prevent these issues&quot;&lt;/li&gt;
+&lt;li&gt;Update rules, commands, or reference docs&lt;/li&gt;
+&lt;li&gt;Commit system improvements&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;&lt;strong&gt;Repeat:&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;Each cycle: stronger system, more reliable AI, faster shipping.&lt;/p&gt;
+&lt;h2&gt;The Meta-Lesson&lt;/h2&gt;
+&lt;p&gt;All five techniques manage context strategically:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;PRD&lt;/strong&gt; = north star context (what we&apos;re building)&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Modular rules&lt;/strong&gt; = just-in-time context (how we build it)&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Commands&lt;/strong&gt; = process context (repeatable workflows)&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Context resets&lt;/strong&gt; = eliminate noise (clean slate for execution)&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;System evolution&lt;/strong&gt; = improve context quality (compound over time)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Master context management = master AI-assisted development.&lt;/p&gt;
+&lt;h2&gt;Start Here&lt;/h2&gt;
+&lt;p&gt;Don&apos;t implement everything at once. Ramp up over 5 weeks:&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Week 1:&lt;/strong&gt; Create PRD + prime command
+&lt;strong&gt;Week 2:&lt;/strong&gt; Add plan/execute workflow + context resets
+&lt;strong&gt;Week 3:&lt;/strong&gt; Commandify common prompts (commit, review)
+&lt;strong&gt;Week 4:&lt;/strong&gt; Start system evolution after each feature
+&lt;strong&gt;Week 5:&lt;/strong&gt; Implement modular rules architecture&lt;/p&gt;
+&lt;p&gt;By week 6, you&apos;re operating at a different level.&lt;/p&gt;
+&lt;h2&gt;Resources&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Video:&lt;/strong&gt; &lt;a href=&quot;https://www.youtube.com/watch?v=ttdWPDmBN_4&quot;&gt;Watch the full video&lt;/a&gt; for detailed examples&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Course:&lt;/strong&gt; &lt;a href=&quot;https://dynamous.ai/agentic-coding-course&quot;&gt;Dynamous Agentic Coding Course&lt;/a&gt; - Full system for reliable AI coding&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;GitHub Repo:&lt;/strong&gt; &lt;a href=&quot;https://github.com/coleam00/habit-tracker/tree/main&quot;&gt;Habit Tracker with all commands&lt;/a&gt; - Command templates and examples&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Workflow Diagram:&lt;/strong&gt; &lt;a href=&quot;https://github.com/coleam00/habit-tracker/blob/main/Top1%25AgenticEngineering.png&quot;&gt;Visual system overview&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;All credit to the video creator for these techniques. This is my condensed reference—watch the original for the complete system.&lt;/p&gt;
+</content:encoded><author>Josh Tune</author></item><item><title>Git Worktree: Pros, Cons, and the Gotchas Worth Knowing</title><link>https://joshtune.com/posts/git-worktree-pros-cons</link><guid isPermaLink="true">https://joshtune.com/posts/git-worktree-pros-cons</guid><description>Why git worktree is great for parallel work (and what to watch out for).</description><pubDate>Sun, 18 Jan 2026 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;&lt;code&gt;git worktree&lt;/code&gt; is a Git feature that lets you check out &lt;strong&gt;multiple branches at the same time&lt;/strong&gt;, each in its own folder, without making multiple full clones.&lt;/p&gt;
+&lt;p&gt;If you’ve ever been mid-change and needed to quickly fix something on another branch (or you’re juggling a post draft + site tweaks), worktrees are a clean way to keep momentum without stashing or context-switching your entire working directory.&lt;/p&gt;
+&lt;h2&gt;The idea (in one paragraph)&lt;/h2&gt;
+&lt;p&gt;A normal repo has one working directory attached to your &lt;code&gt;.git&lt;/code&gt;. With worktrees, you keep the same underlying repo data, but Git gives you extra working directories—each with its &lt;strong&gt;own checked-out branch/commit&lt;/strong&gt; and its &lt;strong&gt;own index&lt;/strong&gt;—while sharing the same object database.&lt;/p&gt;
+&lt;h2&gt;When worktrees shine&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;Writing a blog post on a branch while keeping &lt;code&gt;main&lt;/code&gt; ready to deploy.&lt;/li&gt;
+&lt;li&gt;Working on two features in parallel without constantly switching branches.&lt;/li&gt;
+&lt;li&gt;Running side-by-side comparisons (two builds, two configs, two versions).&lt;/li&gt;
+&lt;li&gt;Reviewing a PR locally while still coding elsewhere.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;The pros&lt;/h2&gt;
+&lt;h3&gt;1) Parallel branches without &lt;code&gt;stash&lt;/code&gt; gymnastics&lt;/h3&gt;
+&lt;p&gt;You can have &lt;code&gt;main&lt;/code&gt; open in one folder and a post branch open in another. No “stash, checkout, pop, resolve conflicts, repeat.”&lt;/p&gt;
+&lt;h3&gt;2) Faster and smaller than multiple clones&lt;/h3&gt;
+&lt;p&gt;Worktrees share the object database, so you typically avoid the cost of re-downloading history for each “copy” of the repo.&lt;/p&gt;
+&lt;h3&gt;3) Cleaner mental model for focused work&lt;/h3&gt;
+&lt;p&gt;Each folder can represent one “thing” you’re doing. It’s a simple way to keep your working directory honest.&lt;/p&gt;
+&lt;h2&gt;The cons (and what to watch for)&lt;/h2&gt;
+&lt;h3&gt;1) More folders = more confusion&lt;/h3&gt;
+&lt;p&gt;You now have multiple directories that look like “the repo.” It’s easy to edit in the wrong one, run scripts in the wrong one, or wonder why changes “didn’t apply.”&lt;/p&gt;
+&lt;h3&gt;2) Disk usage can still grow&lt;/h3&gt;
+&lt;p&gt;While Git objects are shared, your dependencies and build artifacts often aren’t.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;node_modules/&lt;/code&gt; (or &lt;code&gt;pnpm&lt;/code&gt;/&lt;code&gt;npm&lt;/code&gt; caches) might exist per worktree.&lt;/li&gt;
+&lt;li&gt;Framework caches can balloon quietly.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;If your workflow is dependency-heavy, consider a strategy that avoids reinstalling dependencies per worktree (or accept the tradeoff and prune aggressively).&lt;/p&gt;
+&lt;h3&gt;3) Some tooling assumes one working directory&lt;/h3&gt;
+&lt;p&gt;Editors, language servers, file watchers, and dev servers can get weird when you run multiple instances pointing at the same shared repo metadata. Usually it’s fine—until it isn’t.&lt;/p&gt;
+&lt;h3&gt;4) There are a few “Git rules” you’ll hit immediately&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;A branch can only be checked out in &lt;strong&gt;one worktree&lt;/strong&gt; at a time.&lt;/li&gt;
+&lt;li&gt;You can’t delete a branch that’s checked out in any worktree.&lt;/li&gt;
+&lt;li&gt;Deleting/moving the folder manually can leave stale worktree references.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;Gotchas and how to avoid them&lt;/h2&gt;
+&lt;h3&gt;Don’t delete worktree folders by hand&lt;/h3&gt;
+&lt;p&gt;Use Git to remove worktrees, then prune stale entries:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;git worktree remove &amp;lt;path&amp;gt;
+git worktree prune
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;Know what’s shared vs per-worktree&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;Shared: the Git object database (history, blobs, etc.)&lt;/li&gt;
+&lt;li&gt;Per-worktree: the working directory and index (staged changes)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;That’s why worktrees feel “separate,” but also why they can still trip each other up if you treat them like fully independent clones.&lt;/p&gt;
+&lt;h3&gt;Submodules and setup steps repeat&lt;/h3&gt;
+&lt;p&gt;If your repo uses submodules or expects one-time setup, you may need to run those steps per worktree.&lt;/p&gt;
+&lt;h2&gt;My favorite pattern: one worktree per “thread of work”&lt;/h2&gt;
+&lt;p&gt;Here’s a simple setup that keeps &lt;code&gt;main&lt;/code&gt; clean while you write:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;# from your main checkout
+git fetch
+git worktree add ../site-post-git-worktree -b post/git-worktree-pros-cons
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Now you have:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;./&lt;/code&gt; → your normal checkout (keep it on &lt;code&gt;main&lt;/code&gt;)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;../site-post-git-worktree&lt;/code&gt; → the post branch checkout&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;When you’re done:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;git worktree remove ../site-post-git-worktree
+git branch -d post/git-worktree-pros-cons
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;A handy helper: git-worktree-runner&lt;/h2&gt;
+&lt;p&gt;If you like the worktree workflow but want less manual repetition, check out &lt;a href=&quot;https://github.com/coderabbitai/git-worktree-runner&quot;&gt;git-worktree-runner&lt;/a&gt;. It’s a small helper for running commands across your worktrees (useful when you want to update deps, run builds, or verify things in multiple branches at once).&lt;/p&gt;
+&lt;h2&gt;The quick decision rule&lt;/h2&gt;
+&lt;p&gt;Use worktrees when you want &lt;strong&gt;parallel focus&lt;/strong&gt; (two branches at once) and you’re okay managing multiple folders. Skip them if your tooling or dependency setup gets messy with duplicate installs.&lt;/p&gt;
+&lt;p&gt;If you haven’t tried them before, use one for something small (like a blog post) and see how it feels in your day-to-day flow.&lt;/p&gt;
+</content:encoded><author>Josh Tune</author></item><item><title>Three UI Frameworks Walk Into a Svelte Project</title><link>https://joshtune.com/posts/comparing-svelte-ui-frameworks</link><guid isPermaLink="true">https://joshtune.com/posts/comparing-svelte-ui-frameworks</guid><description>Comparing shadcn-svelte, Skeleton, and DaisyUI—what they do differently and which one fits your Svelte project.</description><pubDate>Thu, 29 Jan 2026 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;I&apos;ve been looking at UI frameworks lately, specifically ones that play well with Svelte. Three caught my attention: shadcn-svelte, Skeleton, and DaisyUI. They all solve the &quot;I need decent-looking components&quot; problem, but they approach it very differently.&lt;/p&gt;
+&lt;p&gt;Here&apos;s how they stack up.&lt;/p&gt;
+&lt;h2&gt;The quick version&lt;/h2&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;&lt;/th&gt;
+&lt;th&gt;shadcn-svelte&lt;/th&gt;
+&lt;th&gt;Skeleton&lt;/th&gt;
+&lt;th&gt;DaisyUI&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;Approach&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;Copy components into your project&lt;/td&gt;
+&lt;td&gt;Install as dependency&lt;/td&gt;
+&lt;td&gt;Tailwind plugin&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;Svelte-first&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;Yes&lt;/td&gt;
+&lt;td&gt;Yes (also React, Vue, etc.)&lt;/td&gt;
+&lt;td&gt;Framework-agnostic&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;JavaScript&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;Yes, Svelte components&lt;/td&gt;
+&lt;td&gt;Yes, uses Zag.js&lt;/td&gt;
+&lt;td&gt;No, pure CSS&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;Ownership&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;You own the code&lt;/td&gt;
+&lt;td&gt;Library owns the code&lt;/td&gt;
+&lt;td&gt;Plugin owns the styles&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;Customization&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;Edit source directly&lt;/td&gt;
+&lt;td&gt;Theme system + Tailwind&lt;/td&gt;
+&lt;td&gt;Tailwind utilities + themes&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;Learning curve&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;Moderate&lt;/td&gt;
+&lt;td&gt;Moderate&lt;/td&gt;
+&lt;td&gt;Low&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h2&gt;shadcn-svelte: Own your components&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&quot;https://www.shadcn-svelte.com/&quot;&gt;shadcn-svelte&lt;/a&gt; is the Svelte port of the popular shadcn/ui. The philosophy is different from typical component libraries: instead of installing a package and importing from it, you copy the component source code directly into your project.&lt;/p&gt;
+&lt;p&gt;This sounds weird at first. Why would I want to maintain component code myself?&lt;/p&gt;
+&lt;p&gt;The answer is control. When you need to change how a button behaves or add a prop that the library doesn&apos;t support, you just edit the file. No waiting for PRs to merge, no forking the repo, no &quot;hacky workarounds.&quot; It&apos;s your code.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;What I like:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Beautiful defaults based on Radix primitives&lt;/li&gt;
+&lt;li&gt;Full control over every line of code&lt;/li&gt;
+&lt;li&gt;Great accessibility out of the box&lt;/li&gt;
+&lt;li&gt;Active community, good docs&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;What I don&apos;t:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;You&apos;re responsible for updates (though that&apos;s kind of the point)&lt;/li&gt;
+&lt;li&gt;Initial setup takes longer than &lt;code&gt;npm install&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;If you want the same component in multiple projects, you&apos;re copying files around&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Best for:&lt;/strong&gt; Projects where you know you&apos;ll customize heavily, or teams that want complete ownership over their design system.&lt;/p&gt;
+&lt;h2&gt;Skeleton: The batteries-included option&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&quot;https://www.skeleton.dev/&quot;&gt;Skeleton&lt;/a&gt; calls itself &quot;the adaptive design system for Tailwind CSS.&quot; It started as Svelte-first but now supports React, Vue, Solid, and Astro too.&lt;/p&gt;
+&lt;p&gt;What sets Skeleton apart is how complete it feels. You get a design system, not just components. Typography scales, spacing tokens, color systems, dark mode—it&apos;s all thought through and connected. The components use Zag.js under the hood, which handles the gnarly bits like accessibility and internationalization across frameworks.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;What I like:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Feels cohesive—everything works together&lt;/li&gt;
+&lt;li&gt;Great theme system with CSS custom properties&lt;/li&gt;
+&lt;li&gt;Interactive components handle state properly&lt;/li&gt;
+&lt;li&gt;Strong TypeScript support&lt;/li&gt;
+&lt;li&gt;Active development and solid community (5k+ GitHub stars, 2k+ Discord)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;What I don&apos;t:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;More opinionated than the others&lt;/li&gt;
+&lt;li&gt;Larger footprint if you only need a few components&lt;/li&gt;
+&lt;li&gt;Cross-framework support means some Svelte-specific patterns feel abstracted away&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Best for:&lt;/strong&gt; Teams building substantial apps who want a complete design system without assembling one from scratch.&lt;/p&gt;
+&lt;h2&gt;DaisyUI: Just add classes&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&quot;https://daisyui.com/&quot;&gt;DaisyUI&lt;/a&gt; takes a radically different approach. It&apos;s a Tailwind plugin that gives you semantic class names for components. No JavaScript. No framework lock-in. Just CSS.&lt;/p&gt;
+&lt;p&gt;Instead of writing &lt;code&gt;class=&quot;px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600&quot;&lt;/code&gt;, you write &lt;code&gt;class=&quot;btn btn-primary&quot;&lt;/code&gt;. DaisyUI claims this reduces class names by 88% and HTML file size by 79%. Whether those numbers hold for your project, the code does get cleaner.&lt;/p&gt;
+&lt;p&gt;The theme system is impressive—35 built-in themes using CSS variables. Switch from light to dark to cyberpunk with a single attribute change.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;What I like:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Zero JavaScript dependency&lt;/li&gt;
+&lt;li&gt;Works with any framework (or no framework)&lt;/li&gt;
+&lt;li&gt;65 components covering most needs&lt;/li&gt;
+&lt;li&gt;Themes are genuinely good and easy to customize&lt;/li&gt;
+&lt;li&gt;Smallest learning curve of the three&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;What I don&apos;t:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;No interactive behavior—you write your own JS for modals, dropdowns, etc.&lt;/li&gt;
+&lt;li&gt;Less &quot;Svelte-native&quot; feeling&lt;/li&gt;
+&lt;li&gt;Semantic classes can conflict with existing Tailwind mental models&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Best for:&lt;/strong&gt; Projects where you want clean markup and don&apos;t mind wiring up interactions yourself. Great for content sites, landing pages, or when you&apos;re already comfortable with vanilla JS/Svelte for behavior.&lt;/p&gt;
+&lt;h2&gt;My take as a Svelte developer&lt;/h2&gt;
+&lt;p&gt;I&apos;m biased toward Svelte, so here&apos;s my honest take:&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;shadcn-svelte&lt;/strong&gt; feels the most &quot;Svelte-native&quot; because the components are actual &lt;code&gt;.svelte&lt;/code&gt; files you own. The patterns feel familiar. If I&apos;m building something custom and want a head start with good defaults, this is where I&apos;d start.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Skeleton&lt;/strong&gt; is what I&apos;d pick for a team project or larger app. The design system coherence matters when multiple people are building features. It&apos;s opinionated, but those opinions are good ones.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;DaisyUI&lt;/strong&gt; is what I&apos;d reach for when I want to move fast and the project is straightforward. Need a marketing site that looks good? DaisyUI + Svelte is hard to beat for speed. Just know you&apos;re handling component behavior yourself.&lt;/p&gt;
+&lt;h2&gt;The decision tree&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Want full control and Svelte-native patterns?&lt;/strong&gt; → shadcn-svelte&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Want a complete design system with less decisions?&lt;/strong&gt; → Skeleton&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Want to move fast with pure CSS components?&lt;/strong&gt; → DaisyUI&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Building something small and scrappy?&lt;/strong&gt; → DaisyUI&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Building something large with a team?&lt;/strong&gt; → Skeleton&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Building something you&apos;ll customize heavily?&lt;/strong&gt; → shadcn-svelte&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;There&apos;s no wrong answer here. All three are well-maintained, have active communities, and will get the job done. The question is which trade-offs match your project.&lt;/p&gt;
+</content:encoded><author>Josh Tune</author></item><item><title>The Shift: Building Components for AI, Not Just Browsers</title><link>https://joshtune.com/posts/shift-in-development-mindset</link><guid isPermaLink="true">https://joshtune.com/posts/shift-in-development-mindset</guid><description>Frontend development is shifting from &quot;build views for users in browsers&quot; to &quot;build components AI can use to present data.&quot; Here&apos;s what that means.</description><pubDate>Thu, 29 Jan 2026 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;Something clicked for me recently at work. We&apos;ve been talking about how we need to think differently about building UI components—not just for users clicking around in browsers, but for AI assistants that need to present data.&lt;/p&gt;
+&lt;p&gt;It took me a minute to get what that actually means. But once I did, I realized it&apos;s the same shift that&apos;s happening on the backend, just arriving on the frontend now.&lt;/p&gt;
+&lt;h2&gt;The backend pattern we already know&lt;/h2&gt;
+&lt;p&gt;On the backend, teams are putting MCP servers in front of APIs. You take your existing endpoints and wrap them so AI assistants can discover and call them through a standard protocol. I wrote about this a couple weeks ago.&lt;/p&gt;
+&lt;p&gt;The frontend version is the same idea: build components that AI can use to present data. If &quot;MCP in front of APIs&quot; is the backend pattern, then &quot;MCP on top of components&quot; is what&apos;s coming for the frontend.&lt;/p&gt;
+&lt;h2&gt;What actually changed&lt;/h2&gt;
+&lt;p&gt;For years, I thought about frontend work like this: user does something, app fetches data, my code decides how to render it. I controlled the presentation layer. I picked the components, decided the layout, wired up the interactions.&lt;/p&gt;
+&lt;p&gt;Now there&apos;s a different flow emerging. User says what they want (often just typing it out), AI figures out what data to get, and then AI picks which components to use to show it. The AI is doing the orchestration. My job shifts to giving it good building blocks.&lt;/p&gt;
+&lt;p&gt;That&apos;s the mindset shift. I&apos;m not just building for developers who import my components. I&apos;m building for AI that will select and invoke them at runtime.&lt;/p&gt;
+&lt;h2&gt;Where I&apos;m seeing this show up&lt;/h2&gt;
+&lt;p&gt;MCP now has an extension for interactive UI. When an assistant calls a tool, it can return actual components—charts, forms, dashboards—not just text. Shopify built commerce components (product cards, cart flows) that AI agents can embed directly in conversations. Even shadcn/ui and Material UI ship with MCP server support now, so AI can query the docs and generate code that uses them correctly.&lt;/p&gt;
+&lt;p&gt;The pattern is: your component library becomes an API that AI consumes.&lt;/p&gt;
+&lt;h2&gt;What this means for how I build things&lt;/h2&gt;
+&lt;p&gt;I&apos;ve been thinking about a few things differently:&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Clearer contracts.&lt;/strong&gt; If an AI is going to pick my component, the props and behaviors need to be obvious. Not &quot;flexible and powerful&quot; but &quot;predictable and hard to misuse.&quot; Kitchen-sink components with 50 optional props are a nightmare for AI to use correctly.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Intent over interaction.&lt;/strong&gt; I used to think about what the user clicks. Now I think about what the user wants to accomplish. A product card doesn&apos;t need complex event handlers for AI—it just needs to say &quot;this shows a product and can emit an add-to-cart intent.&quot;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Self-contained enough to embed anywhere.&lt;/strong&gt; If a component might render in a sandboxed iframe inside a chat interface, it can&apos;t assume much about its host environment.&lt;/p&gt;
+&lt;h2&gt;Is this actually new?&lt;/h2&gt;
+&lt;p&gt;Yes and no. Design systems and component libraries have been around forever. What&apos;s new is exposing those same primitives through protocols that let AI discover and invoke them. The components become tools in the MCP sense—functions with schemas and descriptions.&lt;/p&gt;
+&lt;p&gt;It&apos;s an evolution, not a revolution. But it does change how I think about what I&apos;m building and who (or what) is going to use it.&lt;/p&gt;
+&lt;h2&gt;The practical bit&lt;/h2&gt;
+&lt;p&gt;If you&apos;re building components today, it&apos;s worth asking: Can an AI understand what this does? Can it invoke it correctly with sensible defaults? Does it communicate intent clearly? Could it render in an unfamiliar host?&lt;/p&gt;
+&lt;p&gt;We&apos;re not replacing frontend development. We&apos;re adding a new consumer. And that consumer has different needs than the developers who used to be our only audience.&lt;/p&gt;
+&lt;p&gt;I&apos;m still figuring this out, but the shift feels real. It&apos;s changing how I think about the work.&lt;/p&gt;
+</content:encoded><author>Josh Tune</author></item><item><title>Does AI Gibberish Code Matter More Than Functionality?</title><link>https://joshtune.com/posts/does-gibberish-code-matter</link><guid isPermaLink="true">https://joshtune.com/posts/does-gibberish-code-matter</guid><description>A one-page debate on whether the nonsense-looking code AI still ships should worry us more than the working features it unlocks.</description><pubDate>Wed, 25 Feb 2026 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;I keep hearing the same complaint about AI pair programmers: &lt;em&gt;“It works, but it’s gibberish.”&lt;/em&gt; The functions compile, the tests pass, yet the repo slowly fills with mystery helpers and odd shortcuts. So what counts more: how the code reads or what it delivers? Let’s walk through both angles and pick a stance.&lt;/p&gt;
+&lt;h2&gt;Why the model still writes nonsense&lt;/h2&gt;
+&lt;p&gt;My repos are full of helpers named things like &lt;code&gt;handleItRealQuick&lt;/code&gt; because I let models scaffold at 2× speed. When I dig into the diff, the same reasons pop up:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Remix mode.&lt;/strong&gt; Models mash bits of code that often appear together, so you get cargo-cult layers unless you steer them hard.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Thin context.&lt;/strong&gt; I rarely paste more than a slice of the repo, so the model fills gaps with made-up abstractions.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;No pain loop.&lt;/strong&gt; I learn from on-call nights; the model never does. Without tight review gates, it keeps repeating the same oddities.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;So yes, “gibberish” fits. The better question is when it’s a blocker versus just background noise.&lt;/p&gt;
+&lt;h2&gt;When the mess costs more than it helps&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Rotating ownership.&lt;/strong&gt; If another team inherits the module next quarter, I want boring, obvious code—not AI poems.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Audits.&lt;/strong&gt; Regulators don’t care that “tests passed.” Someone has to explain what’s happening line by line.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Shared libraries.&lt;/strong&gt; Core utilities spread everywhere. If they’re weird, every feature inherits the weirdness.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;On-call nights.&lt;/strong&gt; At 3 a.m., clear intent saves more time than cleverness ever will.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;In these spots I slow down, regenerate, or just rewrite it myself.&lt;/p&gt;
+&lt;h2&gt;When I let the gibberish ride&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Spikes and prototypes.&lt;/strong&gt; I care more about learning fast than naming things perfectly.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Migration shims.&lt;/strong&gt; If the code dies after a cutover, I’ll tolerate the mess.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Tiny teams.&lt;/strong&gt; Sometimes shipping something slightly ugly keeps the roadmap moving.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Agent-only glue.&lt;/strong&gt; If humans never touch it and the pipeline can regen it safely, entropy is fine.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;In those cases the “burn it down, it’s ugly” take just slows momentum.&lt;/p&gt;
+&lt;h2&gt;My quick gut check&lt;/h2&gt;
+&lt;p&gt;I run through five fast questions before merging anything AI touched:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Will someone read this monthly or once a year?&lt;/li&gt;
+&lt;li&gt;Does it outlive the current milestone?&lt;/li&gt;
+&lt;li&gt;Who gets hurt if it misbehaves?&lt;/li&gt;
+&lt;li&gt;Could I explain the abstraction in one paragraph?&lt;/li&gt;
+&lt;li&gt;Would another prompt + style guide get me a cleaner version in under an hour?&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;If the answers skew low risk, I merge. If they lean high risk, I regenerate or rewrite.&lt;/p&gt;
+&lt;h2&gt;Where I stand&lt;/h2&gt;
+&lt;p&gt;Gibberish matters when it hides risk. Functionality is the ticket in; clarity keeps that feature cheap to own. I’m aiming for practical balance: ship the code that meets the risk bar, flag the spots where clear language is required, and keep teaching the models what “readable here” looks like. Wins come from knowing when mess is acceptable and when it isn’t—not from banning AI slang outright.&lt;/p&gt;
+</content:encoded><author>Josh Tune</author></item><item><title>AI Has Changed Everything — and Nothing Feels Finished</title><link>https://joshtune.com/posts/ai-has-changed-everything-and-nothing-feels-finished</link><guid isPermaLink="true">https://joshtune.com/posts/ai-has-changed-everything-and-nothing-feels-finished</guid><description>AI rewired how I build software. The joy is real. So is the stress, the confusion, and the nagging feeling that we are still configuring the future instead of living in it.</description><pubDate>Sat, 28 Mar 2026 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;Something hit me the other day. I was staring at a Claude Code session — half-built feature, three CLAUDE.md files tuned just right, a custom slash command I&apos;d spent an hour writing — and I thought: &lt;em&gt;this is incredible, and also... are we there yet?&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;The honest answer is no. But we&apos;re close enough that the shape of &quot;there&quot; is visible, and that&apos;s the part worth writing about.&lt;/p&gt;
+&lt;h2&gt;The joy is real&lt;/h2&gt;
+&lt;p&gt;I can&apos;t overstate how much AI has changed the way I work. I went from writing every line by hand to orchestrating features through conversation. I build things in hours that used to take days. I ship side projects that would&apos;ve died in my head.&lt;/p&gt;
+&lt;p&gt;That first time Claude Code scaffolded an entire Supabase schema, wrote the RLS policies, and wired up the frontend — I just sat there. It felt like cheating. It felt like the future arriving on a Tuesday afternoon.&lt;/p&gt;
+&lt;p&gt;And it keeps compounding. The more I invest in my setup — rules files, PRDs, slash commands, modular context — the better the output gets. Week over week, I&apos;m faster. That feedback loop is addictive.&lt;/p&gt;
+&lt;h2&gt;The stress nobody talks about&lt;/h2&gt;
+&lt;p&gt;But there&apos;s a weight that comes with it.&lt;/p&gt;
+&lt;p&gt;Every week there&apos;s a new tool, a new mode, a new way to configure your agent. Claude Code Remote just dropped and my first thought wasn&apos;t excitement — it was &lt;em&gt;great, another thing I need to learn and set up before I fall behind&lt;/em&gt;.&lt;/p&gt;
+&lt;p&gt;The configuration tax is real. I spend serious time tuning CLAUDE.md files, writing commands, structuring context, resetting conversations at the right moment. It works — but it&apos;s a second job on top of the actual job. And if you skip it, the output quality drops fast.&lt;/p&gt;
+&lt;p&gt;There&apos;s also this low-grade anxiety that the way I&apos;m working &lt;em&gt;right now&lt;/em&gt; will be obsolete in three months. I built a whole workflow around context resets and plan-then-execute cycles. What happens when the next model just... doesn&apos;t need that?&lt;/p&gt;
+&lt;h2&gt;The confusion&lt;/h2&gt;
+&lt;p&gt;Here&apos;s the part I don&apos;t see enough people admit: it&apos;s confusing.&lt;/p&gt;
+&lt;p&gt;Not the tools themselves — those I can learn. The confusion is about &lt;em&gt;identity&lt;/em&gt;. I&apos;ve spent years getting good at writing code. Reading a stack trace, refactoring a gnarly function, knowing when an abstraction is worth it — that was the craft. That was what made me &lt;em&gt;me&lt;/em&gt; as a developer.&lt;/p&gt;
+&lt;p&gt;Now the craft is shifting. Writing code by hand is starting to feel like a deprecated art. Not gone — not yet — but the center of gravity is moving. The skill that matters most isn&apos;t writing the code anymore. It&apos;s knowing what to ask for, how to structure the context, and when to intervene.&lt;/p&gt;
+&lt;p&gt;Managing agents to build a feature is becoming the job. And I think that&apos;s the future. But it&apos;s a weird grief to carry — being excited about where things are going while mourning the thing you spent years learning.&lt;/p&gt;
+&lt;h2&gt;It&apos;s still not there&lt;/h2&gt;
+&lt;p&gt;Even with all the progress, the cracks show up constantly.&lt;/p&gt;
+&lt;p&gt;The AI drifts. It hallucinates file paths. It &quot;fixes&quot; things that weren&apos;t broken. You hand it a well-structured plan and it still invents abstractions you didn&apos;t ask for. You configure everything perfectly and it still surprises you in ways that cost an hour.&lt;/p&gt;
+&lt;p&gt;Claude Code Remote feels like a glimpse of what&apos;s coming — agents running autonomously, executing plans while you sleep. But right now it&apos;s early. You configure, you babysit, you iterate on the config. The promise is &lt;em&gt;set it and forget it&lt;/em&gt;. The reality is &lt;em&gt;set it and watch it carefully&lt;/em&gt;.&lt;/p&gt;
+&lt;p&gt;I keep pulling off impressive things. But each one requires more setup than I expected. The gap between &quot;this is possible&quot; and &quot;this is easy&quot; is still wide.&lt;/p&gt;
+&lt;h2&gt;Where I think this lands&lt;/h2&gt;
+&lt;p&gt;Despite all that, I&apos;m betting on this direction. Here&apos;s why.&lt;/p&gt;
+&lt;p&gt;Every month, the configuration tax gets a little lower. The models get smarter. The tooling gets better. The patterns stabilize. I&apos;m already doing things that were impossible a year ago — and not just possible now, but &lt;em&gt;routine&lt;/em&gt;.&lt;/p&gt;
+&lt;p&gt;Writing code isn&apos;t going away tomorrow. But the ratio is shifting. I used to spend 80% of my time writing code and 20% planning. Now it&apos;s closer to 80% planning and orchestrating and 20% writing code — and that 20% is shrinking.&lt;/p&gt;
+&lt;p&gt;The developers who thrive in this next phase won&apos;t be the ones who write the fastest code. They&apos;ll be the ones who give the clearest instructions, build the best context systems, and know when to let the agent run versus when to take the wheel.&lt;/p&gt;
+&lt;p&gt;That&apos;s a different skill set. It&apos;s one I&apos;m still building. And some days it&apos;s thrilling and some days it&apos;s exhausting and most days it&apos;s both.&lt;/p&gt;
+&lt;h2&gt;What I keep coming back to&lt;/h2&gt;
+&lt;p&gt;AI has changed everything about how I build software. The speed, the ambition, the scale of what one person can ship — it&apos;s genuinely new.&lt;/p&gt;
+&lt;p&gt;But nothing feels finished. The tools are evolving faster than the workflows. The workflows are evolving faster than the habits. And the habits are evolving faster than the identity.&lt;/p&gt;
+&lt;p&gt;I&apos;m not complaining. I&apos;m just being honest about what it feels like to live through a transition that everyone says is the future while you&apos;re still configuring your way through the present.&lt;/p&gt;
+&lt;p&gt;We&apos;ll get there. We&apos;re just not there yet.&lt;/p&gt;
+</content:encoded><author>Josh Tune</author></item><item><title>AI Ships Fast — But Who&apos;s Checking the Code?</title><link>https://joshtune.com/posts/trust-but-verify-ai-generated-code</link><guid isPermaLink="true">https://joshtune.com/posts/trust-but-verify-ai-generated-code</guid><description>AI-generated code can ship in minutes. But speed without verification is just technical debt with a faster delivery truck. Here are the practices that actually improve reliability.</description><pubDate>Wed, 01 Apr 2026 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;I shipped a broken deploy script last week. Not because I wrote bad code — because I &lt;em&gt;didn&apos;t&lt;/em&gt; write the code. Claude did. And I merged it without reading it carefully enough.&lt;/p&gt;
+&lt;p&gt;The script worked. It built, it pushed, it deployed. But it was missing a single file — &lt;code&gt;.nojekyll&lt;/code&gt; — and that one omission nuked every stylesheet on my site. The whole blog went live looking like raw HTML from 1997.&lt;/p&gt;
+&lt;p&gt;Here&apos;s the thing: AI didn&apos;t make a mistake. &lt;em&gt;I&lt;/em&gt; made a mistake. I trusted the output without verifying it. And that&apos;s the trap nobody talks about enough.&lt;/p&gt;
+&lt;h2&gt;The speed problem&lt;/h2&gt;
+&lt;p&gt;AI makes you fast. Dangerously fast.&lt;/p&gt;
+&lt;p&gt;When Claude scaffolds a feature in three minutes, there&apos;s this gravitational pull toward shipping it immediately. The code compiles. The types check. It &lt;em&gt;looks&lt;/em&gt; right. So you merge it and move on to the next thing.&lt;/p&gt;
+&lt;p&gt;But &quot;compiles and looks right&quot; is not the same as &quot;correct.&quot; I&apos;ve merged AI-generated code that passed every lint check and still had a subtle logic bug that didn&apos;t surface for days. The code was syntactically perfect and functionally wrong.&lt;/p&gt;
+&lt;p&gt;Speed is only valuable if what you&apos;re shipping actually works. Otherwise you&apos;re just accumulating debt faster.&lt;/p&gt;
+&lt;h2&gt;What I actually do now&lt;/h2&gt;
+&lt;p&gt;After getting burned enough times, I&apos;ve landed on a set of habits that catch most issues before they hit production. Nothing revolutionary — just discipline.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Read the diff, not the file.&lt;/strong&gt; When AI generates or modifies code, I review the &lt;em&gt;diff&lt;/em&gt;, not the final file. The diff shows exactly what changed. It&apos;s harder to miss a deleted line or a weird addition when you&apos;re looking at deltas instead of the whole file.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Run it locally before pushing.&lt;/strong&gt; This sounds obvious but I skipped it constantly when I first started using AI tools. The code looked good, the agent said it was done, and I pushed. Now I run the build, hit the feature manually, and check the output. Every time.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Ask &quot;what could this break?&quot;&lt;/strong&gt; Before merging anything non-trivial, I spend thirty seconds thinking about blast radius. Does this touch auth? Does it change a database schema? Does it modify a deploy pipeline? The higher the blast radius, the slower I go.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Check the edges, not just the happy path.&lt;/strong&gt; AI is great at the happy path. It&apos;ll build you a form that works perfectly — when every field is filled in correctly. But what about empty submissions? Special characters? Network failures? I&apos;ve learned to specifically ask about edge cases and then &lt;em&gt;verify the answers in the code&lt;/em&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Use the tools you already have.&lt;/strong&gt; Type checking, linting, tests — these aren&apos;t just for human-written code. If anything, they matter &lt;em&gt;more&lt;/em&gt; for AI-generated code because the AI doesn&apos;t have the intuitive sense of &quot;this feels off&quot; that experienced developers carry. &lt;code&gt;pnpm build&lt;/code&gt; catches things that vibes don&apos;t.&lt;/p&gt;
+&lt;h2&gt;The verification tax&lt;/h2&gt;
+&lt;p&gt;I know what you&apos;re thinking. &lt;em&gt;If I have to verify everything, doesn&apos;t that cancel out the speed gains?&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;No. But it changes where the time goes.&lt;/p&gt;
+&lt;p&gt;Without AI, I&apos;d spend 80% of my time writing code and 20% reviewing it. With AI, I spend maybe 20% guiding the generation and 40% reviewing it — and the remaining 40% is time I just &lt;em&gt;didn&apos;t have before&lt;/em&gt;. That&apos;s time I now spend on architecture, on testing, on shipping more features.&lt;/p&gt;
+&lt;p&gt;The verification step isn&apos;t a tax. It&apos;s the part of the job that was always there — it just used to be invisible because writing and reviewing happened simultaneously in your head.&lt;/p&gt;
+&lt;h2&gt;The practices that compound&lt;/h2&gt;
+&lt;p&gt;The best thing I&apos;ve done is build verification into my workflow system rather than relying on willpower.&lt;/p&gt;
+&lt;p&gt;My CLAUDE.md files include validation steps. My slash commands run checks automatically. My deploy pipeline has gates. These aren&apos;t optional checklists I heroically remember to follow — they&apos;re baked into the process so I &lt;em&gt;can&apos;t&lt;/em&gt; skip them.&lt;/p&gt;
+&lt;p&gt;I wrote about &lt;a href=&quot;/posts/mastering-ai-coding-assistants&quot;&gt;system evolution&lt;/a&gt; a while back — the idea that every bug should improve your system, not just get fixed. That applies here too. When I find an issue that slipped through, I don&apos;t just fix the bug. I ask: what check would have caught this? And then I add that check.&lt;/p&gt;
+&lt;p&gt;The &lt;code&gt;.nojekyll&lt;/code&gt; incident? I now have a mental model for deploy scripts: &lt;em&gt;what files does the target platform expect that aren&apos;t in the build output?&lt;/em&gt; That question would have caught it in thirty seconds.&lt;/p&gt;
+&lt;h2&gt;Where this is headed&lt;/h2&gt;
+&lt;p&gt;AI-generated code is only going to get better. The models will make fewer mistakes, the tooling will catch more issues, and the verification step will get lighter over time.&lt;/p&gt;
+&lt;p&gt;But it will never hit zero. There will always be a gap between &quot;the AI produced code&quot; and &quot;this code is correct for my specific context.&quot; Closing that gap is the job now. Not writing code — &lt;em&gt;verifying&lt;/em&gt; code. Not generating features — &lt;em&gt;validating&lt;/em&gt; features.&lt;/p&gt;
+&lt;p&gt;The developers who ship reliable software with AI won&apos;t be the ones who trust it the most. They&apos;ll be the ones who built the best systems for catching what it gets wrong.&lt;/p&gt;
+&lt;p&gt;That&apos;s the skill I&apos;m investing in. And honestly, it&apos;s making me a better engineer than I was before AI showed up.&lt;/p&gt;
+</content:encoded><author>Josh Tune</author></item></channel></rss>
