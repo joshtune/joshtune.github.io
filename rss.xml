@@ -1312,4 +1312,26 @@ git branch -d post/git-worktree-pros-cons
 &lt;p&gt;But it will never hit zero. There will always be a gap between &quot;the AI produced code&quot; and &quot;this code is correct for my specific context.&quot; Closing that gap is the job now. Not writing code — &lt;em&gt;verifying&lt;/em&gt; code. Not generating features — &lt;em&gt;validating&lt;/em&gt; features.&lt;/p&gt;
 &lt;p&gt;The developers who ship reliable software with AI won&apos;t be the ones who trust it the most. They&apos;ll be the ones who built the best systems for catching what it gets wrong.&lt;/p&gt;
 &lt;p&gt;That&apos;s the skill I&apos;m investing in. And honestly, it&apos;s making me a better engineer than I was before AI showed up.&lt;/p&gt;
+</content:encoded><author>Josh Tune</author></item><item><title>The Context Bottleneck</title><link>https://joshtune.com/posts/the-context-bottleneck</link><guid isPermaLink="true">https://joshtune.com/posts/the-context-bottleneck</guid><description>AI is fast. Humans are slow. The joke writes itself. But the question underneath it — where do I fit in this? — keeps following me around.</description><pubDate>Thu, 09 Apr 2026 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;There&apos;s a joke making the rounds that we&apos;ve reached the age where AI has taken flight — and humans are just the &quot;context bottleneck to productivity.&quot;&lt;/p&gt;
+&lt;p&gt;I laughed the first time I heard it. Then I sat with it for a minute. Then I stopped laughing.&lt;/p&gt;
+&lt;p&gt;Because the joke lands. I feel it every day. The AI &lt;em&gt;could&lt;/em&gt; keep going. It could scaffold the next feature, write the tests, open the PR. But it&apos;s waiting on me. Waiting for me to review, approve, clarify, redirect. I&apos;m the slowest part of my own workflow.&lt;/p&gt;
+&lt;p&gt;I &lt;a href=&quot;/posts/ai-has-changed-everything-and-nothing-feels-finished&quot;&gt;wrote about this shift&lt;/a&gt; a few weeks ago — how the ratio flipped from 80% writing code to 80% orchestrating. The code gets written in minutes now. The context transfer takes hours. CLAUDE.md files, PRDs, conversation resets, prompt tuning — that&apos;s where my time goes. And that ratio keeps tilting.&lt;/p&gt;
+&lt;p&gt;So yeah. The bottleneck framing? It&apos;s not wrong.&lt;/p&gt;
+&lt;h2&gt;Where the hope is&lt;/h2&gt;
+&lt;p&gt;Here&apos;s what I keep coming back to: the AI is fast, but it doesn&apos;t know what matters.&lt;/p&gt;
+&lt;p&gt;It can generate ten approaches to a problem. It can&apos;t feel which one fits. It can scaffold a feature in three minutes. It can&apos;t tell you whether that feature should exist. It can write a migration, but it doesn&apos;t know that the team decided last Thursday to deprecate that table.&lt;/p&gt;
+&lt;p&gt;The bottleneck isn&apos;t human &lt;em&gt;thinking&lt;/em&gt;. It&apos;s human &lt;em&gt;judgment&lt;/em&gt;. And judgment is still the whole game. The deciding, the &lt;em&gt;&quot;no, not that&quot;&lt;/em&gt; — that&apos;s where the value lives right now.&lt;/p&gt;
+&lt;p&gt;I want to believe that&apos;s durable. That the human in the loop isn&apos;t a bug in the system — it&apos;s the part that makes the system worth running.&lt;/p&gt;
+&lt;h2&gt;Where the doubt creeps in&lt;/h2&gt;
+&lt;p&gt;But I&apos;d be lying if I said I was confident about that.&lt;/p&gt;
+&lt;p&gt;Five months from now, the models will hold more context. The configuration tax I pay today — the rules files, the slash commands, the careful conversation resets — might just disappear. The bottleneck I represent gets thinner.&lt;/p&gt;
+&lt;p&gt;A year from now? Maybe the AI doesn&apos;t need me to structure the PRD. Maybe it reads the codebase, talks to the stakeholders, and figures out what to build on its own. Maybe &quot;judgment&quot; starts looking less like a human skill and more like a training objective.&lt;/p&gt;
+&lt;p&gt;Five years from now? I don&apos;t know. And &lt;em&gt;that&apos;s&lt;/em&gt; the part that sits with me.&lt;/p&gt;
+&lt;p&gt;I&apos;ve spent over twenty years building a career on writing software. The craft shifted once already — from writing code to orchestrating agents. I adapted. I &lt;a href=&quot;/posts/mastering-ai-coding-assistants&quot;&gt;built systems around it&lt;/a&gt;. But what if it shifts again? What if the next version doesn&apos;t need an orchestrator?&lt;/p&gt;
+&lt;h2&gt;Where I actually am&lt;/h2&gt;
+&lt;p&gt;I don&apos;t have a clean answer. I&apos;m not going to pretend I do.&lt;/p&gt;
+&lt;p&gt;Right now, today, I still matter in this loop. My judgment catches things the AI misses. My context about the team, the users, the history — that stuff is load-bearing. Remove me and the output gets faster but worse.&lt;/p&gt;
+&lt;p&gt;But I&apos;m watching that gap close. Month by month. And I&apos;m trying to figure out what to invest in that stays valuable even if the gap closes all the way.&lt;/p&gt;
+&lt;p&gt;Maybe it&apos;s taste. Maybe it&apos;s something I haven&apos;t named yet.&lt;/p&gt;
+&lt;p&gt;I&apos;ll keep building. I&apos;ll keep writing about it. And I&apos;ll keep sitting with the question I can&apos;t answer: &lt;em&gt;where do I fit in this?&lt;/em&gt;&lt;/p&gt;
 </content:encoded><author>Josh Tune</author></item></channel></rss>
