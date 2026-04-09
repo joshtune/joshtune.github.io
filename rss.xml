@@ -153,14 +153,14 @@ glab mr update --fill
 &lt;li&gt;When a parent changes, rebase children and update their MRs.&lt;/li&gt;
 &lt;/ol&gt;
 &lt;p&gt;Stacking MRs can feel like overhead at first, but with the right tooling, it keeps reviews smaller, clearer, and easier to merge.&lt;/p&gt;
-&lt;p&gt;What is your favorite git workflow? What are your opinions when it comes to stacking MRs? Let me know in the comments!&lt;/p&gt;
+&lt;p&gt;What&apos;s your favorite git workflow? Do you stack MRs? Let me know in the comments!&lt;/p&gt;
 </content:encoded><author>Josh Tune</author></item><item><title>Three Weeks with AI CLI: What I’ve Learned</title><link>https://joshtune.com/posts/three-weeks-with-ai-cli</link><guid isPermaLink="true">https://joshtune.com/posts/three-weeks-with-ai-cli</guid><description>Three weeks with AI CLI taught me one thing: speed’s easy, clarity’s everything.</description><pubDate>Tue, 14 Oct 2025 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;It’s been about three weeks since I started building with AI CLI tools, mainly using Claude CLI and APEX, and honestly — it’s been a ride. It’s fun, it’s fast, and it fixes stuff on the fly. But I’ve learned a few lessons that make working with AI way better.&lt;/p&gt;
 &lt;p&gt;First off, it’s like having a lightning-fast pair programmer that’s too eager. If I toss it a vague problem, it’ll start coding before I finish explaining — and sometimes that means building things I never asked for. So I’ve learned to slow it down. I make it explain its approach first, walk me through the plan, and then we code. That step alone has saved me from a ton of rewrites.&lt;/p&gt;
 &lt;p&gt;Unit tests have become my safety net — not something I ask the AI to write first, but something I rely on to keep both of us honest. They help confirm that what we just built does what I actually intended. It’s a nice loop: I guide the AI, it writes the code, and the tests confirm we stayed aligned.&lt;/p&gt;
 &lt;p&gt;Another big takeaway: track everything.
 AI can drift fast if you don’t give it guardrails. I keep a running document of what’s being built — the plan, structure, preferences, naming patterns, things I like and don’t like. Since I switch between Claude CLI and APEX, having that context written down keeps things consistent no matter which AI I’m using that day.&lt;/p&gt;
 &lt;p&gt;I’ve also realized AI can easily overcomplicate the simple stuff. It’ll throw in abstractions or patterns that don’t fit my workflow. So now I call it out early — “No, we’re keeping this simple,” or “That’s too heavy for what I need.” It listens, adapts, and remembers. Over time, it’s starting to feel like training an assistant to think the way I do.&lt;/p&gt;
-&lt;p&gt;All in all, AI CLI has been a game-changer, but you’ve got to stay in the driver’s seat. It’s not about letting it take over — it’s about having a conversation, setting expectations, and building together. That’s what makes it powerful. And honestly? It’s been pretty great.&lt;/p&gt;
+&lt;p&gt;All in all, AI CLI has changed how I work — but you’ve got to stay in the driver’s seat. The value comes from having a conversation, setting expectations, and building together. And honestly? It’s been pretty great.&lt;/p&gt;
 </content:encoded><author>Josh Tune</author></item><item><title>From Three Weeks with AI CLI → Starting Fresh: My Next Phase</title><link>https://joshtune.com/posts/from-three-weeks-with-ai-cli-to-starting-fresh-my-next-phase</link><guid isPermaLink="true">https://joshtune.com/posts/from-three-weeks-with-ai-cli-to-starting-fresh-my-next-phase</guid><pubDate>Mon, 20 Oct 2025 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;It’s been a useful ride. In my previous post, I shared how I’d spent about three weeks using AI CLI tools (mainly Claude CLI and APEX) and learned some key lessons: slow the AI down so it outlines its approach before coding, write unit tests to keep us honest, track everything (plans, preferences, patterns) to keep consistency, and push back when the AI over-abstracts. ([joshtune.com][1])
 Now I’m gearing up for the next step — &lt;strong&gt;a fresh start&lt;/strong&gt;, built &lt;em&gt;slice by slice&lt;/em&gt; instead of “let’s just go”. Here’s how the next phase is shaping up:&lt;/p&gt;
 &lt;h2&gt;1. Slice by slice, not monolithic&lt;/h2&gt;
@@ -281,7 +281,7 @@ Sometimes it’s finishing what actually matters.&lt;/p&gt;
 &lt;li&gt;Converts web content to Markdown: &lt;strong&gt;web pages&lt;/strong&gt;, &lt;strong&gt;YouTube transcripts&lt;/strong&gt;, &lt;strong&gt;Bing search results&lt;/strong&gt;&lt;/li&gt;
 &lt;li&gt;Also includes a handy “read a Markdown file” tool (&lt;code&gt;get-markdown-file&lt;/code&gt;) for pulling existing notes into context&lt;/li&gt;
 &lt;/ul&gt;
-&lt;h2&gt;Why This Is So Useful&lt;/h2&gt;
+&lt;h2&gt;Why this is so useful&lt;/h2&gt;
 &lt;p&gt;The magic is how it fits into a bigger workflow:&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;strong&gt;Ingestion&lt;/strong&gt;: take “messy” sources (slides, PDFs, screenshots, recordings) and normalize them into Markdown&lt;/li&gt;
@@ -289,14 +289,14 @@ Sometimes it’s finishing what actually matters.&lt;/p&gt;
 &lt;li&gt;&lt;strong&gt;Sharing&lt;/strong&gt;: Markdown is the sweet spot for portability (GitHub, Obsidian, docs, wikis, PR descriptions)&lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;In other words: it’s a small tool that removes a big source of friction.&lt;/p&gt;
-&lt;h2&gt;A Few “This Immediately Helps Me” Use Cases&lt;/h2&gt;
+&lt;h2&gt;A few “this immediately helps me” use cases&lt;/h2&gt;
 &lt;ul&gt;
 &lt;li&gt;Turn a slide deck (&lt;code&gt;.pptx&lt;/code&gt;) into Markdown notes I can actually search and edit&lt;/li&gt;
 &lt;li&gt;Extract text + metadata from images/screenshots, then generate alt text or a write-up&lt;/li&gt;
 &lt;li&gt;Grab a YouTube transcript and turn it into an outline, summary, or study notes&lt;/li&gt;
 &lt;li&gt;Transcribe a short audio memo and convert it into a TODO list&lt;/li&gt;
 &lt;/ul&gt;
-&lt;h2&gt;Quick Start (From The Repo)&lt;/h2&gt;
+&lt;h2&gt;Quick start (from the repo)&lt;/h2&gt;
 &lt;pre&gt;&lt;code&gt;git clone https://github.com/zcaceres/markdownify-mcp
 cd markdownify-mcp
 pnpm install
@@ -304,7 +304,7 @@ pnpm run build
 pnpm start
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;The repo notes that this will also install &lt;code&gt;uv&lt;/code&gt; and related Python dependencies.&lt;/p&gt;
-&lt;h2&gt;Wiring It Up In An MCP Desktop App&lt;/h2&gt;
+&lt;h2&gt;Wiring it up in an MCP desktop app&lt;/h2&gt;
 &lt;p&gt;The README includes an example config like this:&lt;/p&gt;
 &lt;pre&gt;&lt;code&gt;{
   &quot;mcpServers&quot;: {
@@ -320,9 +320,9 @@ pnpm start
   }
 }
 &lt;/code&gt;&lt;/pre&gt;
-&lt;h2&gt;One Tiny Caveat&lt;/h2&gt;
-&lt;p&gt;The project is actively evolving; there’s even a request for help testing Windows support. If you’re on Windows and can validate a PR, you could make a real impact.&lt;/p&gt;
-&lt;h2&gt;Go Check It Out&lt;/h2&gt;
+&lt;h2&gt;One tiny caveat&lt;/h2&gt;
+&lt;p&gt;The project is actively evolving; there’s even a request for help testing Windows support. If you’re on Windows and can validate a PR, you could help move it forward.&lt;/p&gt;
+&lt;h2&gt;Go check it out&lt;/h2&gt;
 &lt;ul&gt;
 &lt;li&gt;Repo: https://github.com/zcaceres/markdownify-mcp&lt;/li&gt;
 &lt;/ul&gt;
@@ -337,7 +337,7 @@ pnpm start
 &lt;/ul&gt;
 &lt;p&gt;It’s been a nice little amplifier for writing, refactors, automations, and docs — basically anything that benefits from momentum and clarity.&lt;/p&gt;
 &lt;p&gt;A coworker also pointed me at Steve Yegge’s &lt;a href=&quot;https://github.com/steveyegge/gastown&quot;&gt;Gastown&lt;/a&gt;, which seems to rhyme with the same idea: give work a concrete shape and keep the feedback loop tight.&lt;/p&gt;
-&lt;p&gt;Anyway: I’m a fan. If you want a lightweight way to stay oriented and ship more reliably, Vibe Kanban is worth a try.&lt;/p&gt;
+&lt;p&gt;Anyway: I’m a fan. If you want a lightweight way to stay oriented and ship more reliably, give Vibe Kanban a look.&lt;/p&gt;
 </content:encoded><author>Josh Tune</author></item><item><title>Spec Kit: Spec-driven development for AI-assisted coding</title><link>https://joshtune.com/posts/spec-kit</link><guid isPermaLink="true">https://joshtune.com/posts/spec-kit</guid><description>A mock blog entry on GitHub’s Spec Kit and how it changes the way I work with coding agents.</description><pubDate>Sat, 10 Jan 2026 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;I’ve been watching the “AI coding agent” space explode: faster scaffolds, faster refactors, faster everything. The downside is also obvious: when you move fast, you can end up with a pile of code that &lt;em&gt;kind of&lt;/em&gt; works but doesn’t match what you actually meant.&lt;/p&gt;
 &lt;p&gt;That’s why GitHub’s &lt;strong&gt;Spec Kit&lt;/strong&gt; caught my eye.&lt;/p&gt;
 &lt;p&gt;Quick note: I haven’t personally tried Spec Kit yet — these are my notes based on what I’m hearing (and what I watched a coworker do with it).&lt;/p&gt;
@@ -426,7 +426,7 @@ Use Postgres for storage. Use server-rendered pages for the share view. Use sign
 &lt;blockquote&gt;
 &lt;p&gt;“Let’s create a standard, governable layer that exposes our systems as AI-usable tools, so any MCP-capable assistant can safely call them.”&lt;/p&gt;
 &lt;/blockquote&gt;
-&lt;p&gt;This post unpacks what that means for you day-to-day as a developer, and what it implies for software development more broadly.&lt;/p&gt;
+&lt;p&gt;This post breaks down what that means for you day-to-day as a developer, and what it implies for software development more broadly.&lt;/p&gt;
 &lt;h2&gt;The 30-second version&lt;/h2&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;strong&gt;MCP (Model Context Protocol)&lt;/strong&gt; is a standard way for an AI app to discover and call “tools” provided by a server (plus access “resources” like files/data).&lt;/li&gt;
@@ -939,7 +939,7 @@ Those issues shouldn&apos;t recur&lt;/p&gt;
 &lt;li&gt;Week 8: 5 mistake types&lt;/li&gt;
 &lt;li&gt;Week 16: Rarely new mistakes&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;Your AI gets more reliable every day. Not because the model improved—because your system evolved.&lt;/p&gt;
+&lt;p&gt;Your AI gets more reliable every day. The model didn&apos;t improve — your system did.&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;The mindset shift:&lt;/strong&gt;&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;From: &quot;This AI is unreliable, I have to fix everything&quot;&lt;/li&gt;
@@ -989,7 +989,7 @@ Those issues shouldn&apos;t recur&lt;/p&gt;
 &lt;strong&gt;Week 3:&lt;/strong&gt; Commandify common prompts (commit, review)
 &lt;strong&gt;Week 4:&lt;/strong&gt; Start system evolution after each feature
 &lt;strong&gt;Week 5:&lt;/strong&gt; Implement modular rules architecture&lt;/p&gt;
-&lt;p&gt;By week 6, you&apos;re operating at a different level.&lt;/p&gt;
+&lt;p&gt;By week 6, the difference is obvious.&lt;/p&gt;
 &lt;h2&gt;Resources&lt;/h2&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;strong&gt;Video:&lt;/strong&gt; &lt;a href=&quot;https://www.youtube.com/watch?v=ttdWPDmBN_4&quot;&gt;Watch the full video&lt;/a&gt; for detailed examples&lt;/li&gt;
@@ -1164,7 +1164,7 @@ git branch -d post/git-worktree-pros-cons
 &lt;li&gt;Zero JavaScript dependency&lt;/li&gt;
 &lt;li&gt;Works with any framework (or no framework)&lt;/li&gt;
 &lt;li&gt;65 components covering most needs&lt;/li&gt;
-&lt;li&gt;Themes are genuinely good and easy to customize&lt;/li&gt;
+&lt;li&gt;Themes are solid and easy to customize&lt;/li&gt;
 &lt;li&gt;Smallest learning curve of the three&lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;&lt;strong&gt;What I don&apos;t:&lt;/strong&gt;&lt;/p&gt;
@@ -1213,7 +1213,7 @@ git branch -d post/git-worktree-pros-cons
 &lt;p&gt;If you&apos;re building components today, it&apos;s worth asking: Can an AI understand what this does? Can it invoke it correctly with sensible defaults? Does it communicate intent clearly? Could it render in an unfamiliar host?&lt;/p&gt;
 &lt;p&gt;We&apos;re not replacing frontend development. We&apos;re adding a new consumer. And that consumer has different needs than the developers who used to be our only audience.&lt;/p&gt;
 &lt;p&gt;I&apos;m still figuring this out, but the shift feels real. It&apos;s changing how I think about the work.&lt;/p&gt;
-</content:encoded><author>Josh Tune</author></item><item><title>Does AI Gibberish Code Matter More Than Functionality?</title><link>https://joshtune.com/posts/does-gibberish-code-matter</link><guid isPermaLink="true">https://joshtune.com/posts/does-gibberish-code-matter</guid><description>A one-page debate on whether the nonsense-looking code AI still ships should worry us more than the working features it unlocks.</description><pubDate>Wed, 25 Feb 2026 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;I keep hearing the same complaint about AI pair programmers: &lt;em&gt;“It works, but it’s gibberish.”&lt;/em&gt; The functions compile, the tests pass, yet the repo slowly fills with mystery helpers and odd shortcuts. So what counts more: how the code reads or what it delivers? Let’s walk through both angles and pick a stance.&lt;/p&gt;
+</content:encoded><author>Josh Tune</author></item><item><title>Does AI Gibberish Code Matter More Than Functionality?</title><link>https://joshtune.com/posts/does-gibberish-code-matter</link><guid isPermaLink="true">https://joshtune.com/posts/does-gibberish-code-matter</guid><description>A one-page debate on whether the nonsense-looking code AI still ships should worry us more than the working features it unlocks.</description><pubDate>Wed, 25 Feb 2026 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;I keep hearing the same complaint about AI pair programmers: &lt;em&gt;“It works, but it’s gibberish.”&lt;/em&gt; The functions compile, the tests pass, yet the repo slowly fills with mystery helpers and odd shortcuts. So what counts more: how the code reads or what it delivers? Here are both angles — and where I landed.&lt;/p&gt;
 &lt;h2&gt;Why the model still writes nonsense&lt;/h2&gt;
 &lt;p&gt;My repos are full of helpers named things like &lt;code&gt;handleItRealQuick&lt;/code&gt; because I let models scaffold at 2× speed. When I dig into the diff, the same reasons pop up:&lt;/p&gt;
 &lt;ul&gt;
@@ -1278,13 +1278,13 @@ git branch -d post/git-worktree-pros-cons
 &lt;p&gt;The developers who thrive in this next phase won&apos;t be the ones who write the fastest code. They&apos;ll be the ones who give the clearest instructions, build the best context systems, and know when to let the agent run versus when to take the wheel.&lt;/p&gt;
 &lt;p&gt;That&apos;s a different skill set. It&apos;s one I&apos;m still building. And some days it&apos;s thrilling and some days it&apos;s exhausting and most days it&apos;s both.&lt;/p&gt;
 &lt;h2&gt;What I keep coming back to&lt;/h2&gt;
-&lt;p&gt;AI has changed everything about how I build software. The speed, the ambition, the scale of what one person can ship — it&apos;s genuinely new.&lt;/p&gt;
-&lt;p&gt;But nothing feels finished. The tools are evolving faster than the workflows. The workflows are evolving faster than the habits. And the habits are evolving faster than the identity.&lt;/p&gt;
+&lt;p&gt;AI has changed everything about how I build software. The speed, the ambition, the scale of what one person can ship — none of that existed a year ago.&lt;/p&gt;
+&lt;p&gt;But nothing feels finished. The tools outpace the workflows. The workflows outpace the habits. And the habits haven&apos;t caught up to the identity shift.&lt;/p&gt;
 &lt;p&gt;I&apos;m not complaining. I&apos;m just being honest about what it feels like to live through a transition that everyone says is the future while you&apos;re still configuring your way through the present.&lt;/p&gt;
 &lt;p&gt;We&apos;ll get there. We&apos;re just not there yet.&lt;/p&gt;
 </content:encoded><author>Josh Tune</author></item><item><title>AI Ships Fast — But Who&apos;s Checking the Code?</title><link>https://joshtune.com/posts/trust-but-verify-ai-generated-code</link><guid isPermaLink="true">https://joshtune.com/posts/trust-but-verify-ai-generated-code</guid><description>AI-generated code can ship in minutes. But speed without verification is just technical debt with a faster delivery truck. Here are the practices that actually improve reliability.</description><pubDate>Wed, 01 Apr 2026 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;I shipped a broken deploy script last week. Not because I wrote bad code — because I &lt;em&gt;didn&apos;t&lt;/em&gt; write the code. Claude did. And I merged it without reading it carefully enough.&lt;/p&gt;
 &lt;p&gt;The script worked. It built, it pushed, it deployed. But it was missing a single file — &lt;code&gt;.nojekyll&lt;/code&gt; — and that one omission nuked every stylesheet on my site. The whole blog went live looking like raw HTML from 1997.&lt;/p&gt;
-&lt;p&gt;Here&apos;s the thing: AI didn&apos;t make a mistake. &lt;em&gt;I&lt;/em&gt; made a mistake. I trusted the output without verifying it. And that&apos;s the trap nobody talks about enough.&lt;/p&gt;
+&lt;p&gt;Here&apos;s the thing: AI didn&apos;t make a mistake. &lt;em&gt;I&lt;/em&gt; made a mistake. I trusted the output without verifying it. And that&apos;s the part I keep getting wrong.&lt;/p&gt;
 &lt;h2&gt;The speed problem&lt;/h2&gt;
 &lt;p&gt;AI makes you fast. Dangerously fast.&lt;/p&gt;
 &lt;p&gt;When Claude scaffolds a feature in three minutes, there&apos;s this gravitational pull toward shipping it immediately. The code compiles. The types check. It &lt;em&gt;looks&lt;/em&gt; right. So you merge it and move on to the next thing.&lt;/p&gt;
