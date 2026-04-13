@@ -197,7 +197,45 @@ This keeps context clean, consistent, and easier to manage as the app grows.&lt;
 &lt;li&gt;turning half-finished ideas into complete, survivable features&lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;None of this fits neatly into a “new project” announcement — but all of it made the product better.&lt;/p&gt;
-&lt;h2&gt;What Actually Shipped&lt;/h2&gt;
+&lt;h2&gt;What actually shipped&lt;/h2&gt;
+&lt;p&gt;Here&apos;s the high-level view:&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;Area&lt;/th&gt;
+&lt;th&gt;What changed&lt;/th&gt;
+&lt;th&gt;Why it mattered&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;Recurring events&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;Repeat logic, excluded dates, safer deletes, week/month grouping&lt;/td&gt;
+&lt;td&gt;Calendar became something you can trust&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;Permissions &amp;amp; roles&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;DB migrations, RLS fixes, UI reflecting real permission state&lt;/td&gt;
+&lt;td&gt;Fewer “why can I see this?” moments&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;Auth &amp;amp; user management&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;Session expiry, password reset, email verification, Resend switch&lt;/td&gt;
+&lt;td&gt;Site became operable for real users&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;Navigation &amp;amp; layout&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;Hierarchy cleanup, mobile breakpoints, max-width constraints&lt;/td&gt;
+&lt;td&gt;Feels like a coherent tool, not a pile of pages&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;Challenges &amp;amp; goals&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;Filtering, archive safety, root-only destructive actions&lt;/td&gt;
+&lt;td&gt;Learned what sticks, cut what doesn&apos;t&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;The details below tell the full story.&lt;/p&gt;
 &lt;h3&gt;Recurring Events Became a Real Feature&lt;/h3&gt;
 &lt;p&gt;Recurring events moved from “mostly works” to &lt;em&gt;intentionally designed&lt;/em&gt;:&lt;/p&gt;
 &lt;ul&gt;
@@ -1196,7 +1234,39 @@ git branch -d post/git-worktree-pros-cons
 &lt;p&gt;The frontend version is the same idea: build components that AI can use to present data. If &quot;MCP in front of APIs&quot; is the backend pattern, then &quot;MCP on top of components&quot; is what&apos;s coming for the frontend.&lt;/p&gt;
 &lt;h2&gt;What actually changed&lt;/h2&gt;
 &lt;p&gt;For years, I thought about frontend work like this: user does something, app fetches data, my code decides how to render it. I controlled the presentation layer. I picked the components, decided the layout, wired up the interactions.&lt;/p&gt;
-&lt;p&gt;Now there&apos;s a different flow emerging. User says what they want (often just typing it out), AI figures out what data to get, and then AI picks which components to use to show it. The AI is doing the orchestration. My job shifts to giving it good building blocks.&lt;/p&gt;
+&lt;p&gt;Now there&apos;s a different flow emerging:&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;&lt;/th&gt;
+&lt;th&gt;Traditional&lt;/th&gt;
+&lt;th&gt;AI-enabled&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;Trigger&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;User clicks a button&lt;/td&gt;
+&lt;td&gt;User types what they want&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;Data&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;App fetches from API&lt;/td&gt;
+&lt;td&gt;AI decides what to fetch&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;Rendering&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;My code picks the component and layout&lt;/td&gt;
+&lt;td&gt;AI selects and invokes components&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;My role&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;Build the full pipeline&lt;/td&gt;
+&lt;td&gt;Build good building blocks&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;User says what they want, AI figures out what data to get, and then AI picks which components to use to show it. The AI is doing the orchestration. My job shifts to giving it good building blocks.&lt;/p&gt;
 &lt;p&gt;That&apos;s the mindset shift. I&apos;m not just building for developers who import my components. I&apos;m building for AI that will select and invoke them at runtime.&lt;/p&gt;
 &lt;h2&gt;Where I&apos;m seeing this show up&lt;/h2&gt;
 &lt;p&gt;MCP now has an extension for interactive UI. When an assistant calls a tool, it can return actual components—charts, forms, dashboards—not just text. Shopify built commerce components (product cards, cart flows) that AI agents can embed directly in conversations. Even shadcn/ui and Material UI ship with MCP server support now, so AI can query the docs and generate code that uses them correctly.&lt;/p&gt;
@@ -1274,7 +1344,22 @@ git branch -d post/git-worktree-pros-cons
 &lt;h2&gt;Where I think this lands&lt;/h2&gt;
 &lt;p&gt;Despite all that, I&apos;m betting on this direction. Here&apos;s why.&lt;/p&gt;
 &lt;p&gt;Every month, the configuration tax gets a little lower. The models get smarter. The tooling gets better. The patterns stabilize. I&apos;m already doing things that were impossible a year ago — and not just possible now, but &lt;em&gt;routine&lt;/em&gt;.&lt;/p&gt;
-&lt;p&gt;Writing code isn&apos;t going away tomorrow. But the ratio is shifting. I used to spend 80% of my time writing code and 20% planning. Now it&apos;s closer to 80% planning and orchestrating and 20% writing code — and that 20% is shrinking.&lt;/p&gt;
+&lt;p&gt;Writing code isn&apos;t going away tomorrow. But the ratio is shifting.&lt;/p&gt;
+&lt;p&gt;import { BarChart } from &apos;~/components/charts&apos;&lt;/p&gt;
+&lt;p&gt;&amp;lt;BarChart
+client:visible
+data={[
+{ approach: &apos;Before AI&apos;, &apos;Writing code&apos;: 80, &apos;Planning &amp;amp; orchestrating&apos;: 20 },
+{ approach: &apos;With AI&apos;, &apos;Writing code&apos;: 20, &apos;Planning &amp;amp; orchestrating&apos;: 80 },
+]}
+keys={[&apos;Writing code&apos;, &apos;Planning &amp;amp; orchestrating&apos;]}
+indexBy=&quot;approach&quot;
+height={300}
+groupMode=&quot;stacked&quot;
+showLegend={true}
+axisLeftLabel=&quot;% of time&quot;
+/&amp;gt;&lt;/p&gt;
+&lt;p&gt;I used to spend 80% of my time writing code and 20% planning. Now it&apos;s closer to the inverse — and that 20% is shrinking.&lt;/p&gt;
 &lt;p&gt;The developers who thrive in this next phase won&apos;t be the ones who write the fastest code. They&apos;ll be the ones who give the clearest instructions, build the best context systems, and know when to let the agent run versus when to take the wheel.&lt;/p&gt;
 &lt;p&gt;That&apos;s a different skill set. It&apos;s one I&apos;m still building. And some days it&apos;s thrilling and some days it&apos;s exhausting and most days it&apos;s both.&lt;/p&gt;
 &lt;h2&gt;What I keep coming back to&lt;/h2&gt;
@@ -1315,7 +1400,23 @@ git branch -d post/git-worktree-pros-cons
 </content:encoded><author>Josh Tune</author></item><item><title>The Context Bottleneck</title><link>https://joshtune.com/posts/the-context-bottleneck</link><guid isPermaLink="true">https://joshtune.com/posts/the-context-bottleneck</guid><description>AI is fast. Humans are slow. The joke writes itself. But the question underneath it — where do I fit in this? — keeps following me around.</description><pubDate>Thu, 09 Apr 2026 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;There&apos;s a joke making the rounds that we&apos;ve reached the age where AI has taken flight — and humans are just the &quot;context bottleneck to productivity.&quot;&lt;/p&gt;
 &lt;p&gt;I laughed the first time I heard it. Then I sat with it for a minute. Then I stopped laughing.&lt;/p&gt;
 &lt;p&gt;Because the joke lands. I feel it every day. The AI &lt;em&gt;could&lt;/em&gt; keep going. It could scaffold the next feature, write the tests, open the PR. But it&apos;s waiting on me. Waiting for me to review, approve, clarify, redirect. I&apos;m the slowest part of my own workflow.&lt;/p&gt;
-&lt;p&gt;I &lt;a href=&quot;/posts/ai-has-changed-everything-and-nothing-feels-finished&quot;&gt;wrote about this shift&lt;/a&gt; a few weeks ago — how the ratio flipped from 80% writing code to 80% orchestrating. The code gets written in minutes now. The context transfer takes hours. CLAUDE.md files, PRDs, conversation resets, prompt tuning — that&apos;s where my time goes. And that ratio keeps tilting.&lt;/p&gt;
+&lt;p&gt;I &lt;a href=&quot;/posts/ai-has-changed-everything-and-nothing-feels-finished&quot;&gt;wrote about this shift&lt;/a&gt; a few weeks ago — how the ratio flipped from 80% writing code to 80% orchestrating. The code gets written in minutes now. The context transfer takes hours. And that ratio keeps tilting.&lt;/p&gt;
+&lt;p&gt;This is what the bottleneck looks like in practice — a rules file I maintain so the AI knows how to work in my blog repo:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;## Personal Voice (Josh&apos;s style)
+
+- Honest about the messy parts — don&apos;t sugarcoat
+- Short punchy paragraphs — rarely more than 3-4 sentences
+- Em dashes for asides — real-time thoughts mid-sentence
+- Forward-looking close — end with where things are headed
+- No corporate tone — never &quot;leverage&quot;, &quot;utilize&quot;, &quot;in conclusion&quot;
+
+## AI Writing Rules
+
+### Words to never use
+delve, landscape (metaphor), tapestry, robust, comprehensive,
+cutting-edge, leverage (verb), seamless, game-changer, utilize...
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;That file didn&apos;t write itself. Neither did the slash commands, the PRDs, or the prompt structures that feed each conversation. That&apos;s the context transfer tax — and right now, I&apos;m the only one who can pay it.&lt;/p&gt;
 &lt;p&gt;So yeah. The bottleneck framing? It&apos;s not wrong.&lt;/p&gt;
 &lt;h2&gt;Where the hope is&lt;/h2&gt;
 &lt;p&gt;Here&apos;s what I keep coming back to: the AI is fast, but it doesn&apos;t know what matters.&lt;/p&gt;
@@ -1342,7 +1443,43 @@ git branch -d post/git-worktree-pros-cons
 &lt;p&gt;And now he&apos;s holding both ends of the rope. The craft is the point — &lt;em&gt;and&lt;/em&gt; the market is about to stop paying for it.&lt;/p&gt;
 &lt;h2&gt;Where I fit&lt;/h2&gt;
 &lt;p&gt;I &lt;a href=&quot;/posts/the-context-bottleneck&quot;&gt;wrote a few days ago&lt;/a&gt; about sitting with a question I can&apos;t answer: &lt;em&gt;where do I fit in this?&lt;/em&gt; Casey&apos;s two-day arc maps almost perfectly onto that post — my &quot;where the hope is&quot; section vs. my &quot;where the doubt creeps in&quot; section. He just said both parts out loud.&lt;/p&gt;
-&lt;p&gt;But here&apos;s where I break from his framing. Casey draws a binary: you love writing code and you&apos;re out, or you never cared and you thrive. I don&apos;t land on either side.&lt;/p&gt;
+&lt;p&gt;But here&apos;s where I break from his framing. Casey draws a binary. I don&apos;t land on either side.&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;&lt;/th&gt;
+&lt;th&gt;Casey (Saturday)&lt;/th&gt;
+&lt;th&gt;Casey (Sunday)&lt;/th&gt;
+&lt;th&gt;Where I land&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;Core belief&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;The craft is the point&lt;/td&gt;
+&lt;td&gt;The craft is a liability&lt;/td&gt;
+&lt;td&gt;The craft serves the outcome&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;AI stance&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;Refuses it — skip the creative work and you lose relevance&lt;/td&gt;
+&lt;td&gt;Predicts it wins — babysitters replace builders&lt;/td&gt;
+&lt;td&gt;Uses it to ship faster&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;Who thrives&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;Those who own every layer&lt;/td&gt;
+&lt;td&gt;Those with skills but no attachment&lt;/td&gt;
+&lt;td&gt;Those who care about the thing working&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;What&apos;s at risk&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;Irrelevance if AI catches up&lt;/td&gt;
+&lt;td&gt;Burnout if you loved the old job too much&lt;/td&gt;
+&lt;td&gt;Still figuring that out&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
 &lt;p&gt;I like the craft. I like reasoning through a problem, shaping the solution, seeing the code take form. But that&apos;s not the &lt;em&gt;only&lt;/em&gt; part I like. I also like seeing it work. The thing running. The user hitting the page. The deploy going green. The moment where it stops being code and starts being a product.&lt;/p&gt;
 &lt;p&gt;The shipping is the bigger reward for me. Always has been. The craft was always in service of that.&lt;/p&gt;
 &lt;h2&gt;Why that gives me hope&lt;/h2&gt;
