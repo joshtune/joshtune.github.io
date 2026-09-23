@@ -1,5 +1,4 @@
 User-agent: *
 Allow: /
-Disallow: /the-phone-setup-as-a-prompt
 
 Sitemap: https://joshtune.com/sitemap-index.xml
